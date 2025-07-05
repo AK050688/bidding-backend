@@ -1,5 +1,6 @@
 import successResponse from "../../../../../assets/response.js";
 import responseMessages from "../../../../../assets/responseMessages.js";
+import { userType } from "../../../../enums/userType.js";
 import apiError from "../../../../helper/apiError.js";
 import categoryServices from "../../services/category.js";
 import Joi from "joi";
@@ -10,9 +11,11 @@ const {
   createCategory,
   updateCategory,
   findCategory,
+  findUserById,
   categoryId,
   deleteCategory,
   findAllCategory,
+  findAdmin
 } = categoryServices;
 export class categoryController {
 
@@ -28,13 +31,27 @@ export class categoryController {
         return res.status(400).json({ error: error.message });
       }
       const { categoryName, description } = value;
-      const adminDetails = await findSeller({ _id: req.userId });
-      if (!adminDetails) {
-        throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
+
+      const user = await findUserById(req.userId)
+
+      if (!user) {
+        return res.status(404).json(new successResponse(responseMessages.USER_NOT_FOUND));
       }
-      const iscategoryName = await findCategory({ categoryName: categoryName });
-      if (iscategoryName) {
-        throw apiError.conflict(responseMessages.CATEGORY_ALREADY_EXISTS);
+      if (![userType.ADMIN, userType.BUYER].includes(user.userType)) {
+        return res.json(apiError.forbidden(responseMessages.UNAUTHORIZED));
+      }
+      if (user.userType == userType.SELLER) {
+        const sellerDetails = await findSeller({ _id: req.userId });
+        if (!sellerDetails) {
+          return res.json(apiError.notFound(responseMessages.SELLER_NOT_FOUND));
+        }
+
+      }
+      const existingCategory = await findCategory({
+        categoryName: { $regex: `^${categoryName}$`, $options: 'i' },
+      });
+      if (existingCategory) {
+        return res.json(apiError.conflict(responseMessages.CATEGORY_ALREADY_EXISTS));
       }
       const obj = {
         categoryName: categoryName,
@@ -49,42 +66,6 @@ export class categoryController {
       return next(error);
     }
   }
-  /**
-   * @swagger
-   * /api/v1/category/updateCategory:
-   *   put:
-   *     summary: admin update category
-   *     tags:
-   *       - CATEGORY
-   *     description: admin can update the category.
-   *     produces:
-   *       - application/json
-   *     parameters:
-   *       - name: authorization
-   *         description: authorization
-   *         in: header
-   *         required: true
-   *       - name: categoryId
-   *         description: categoryId
-   *         in: formData
-   *         required: true
-   *       - name: categoryName
-   *         description: categoryName
-   *         in: formData
-   *         required: false
-   *       - name: description
-   *         description: description
-   *         in: formData
-   *         required: false
-   *     responses:
-   *       200:
-   *         description: Returns success message
-   *       404:
-   *         description: User not found || Data not found.
-   *       501:
-   *         description: Something went wrong!
-   */
-
   async updateCategory(req, res, next) {
     const fields = Joi.object({
       categoryId: Joi.string().required(),
@@ -94,25 +75,24 @@ export class categoryController {
     try {
       const validatedBody = await fields.validateAsync(req.body);
       const { categoryId, categoryName, description } = validatedBody;
-      console.log(validatedBody);
 
-      const adminDetails = await findSeller({ _id: req.userId });
+      const adminDetails = await findAdmin(req.userId);
+
       if (!adminDetails) {
-        throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
+        return res.json(apiError.notFound(responseMessages.ADMIN_NOT_FOUND));
       }
-
       const categoryResult = await findCategory({ _id: categoryId });
       if (!categoryResult) {
-        throw apiError.notFound(responseMessages.CATEGORY_NOT_FOUND);
+        return res.json(apiError.notFound(responseMessages.CATEGORY_NOT_FOUND));
       }
       const data = { categoryName, description };
       if (data) {
-        if (data.name) {
+        if (data.categoryName) {
           const iscategoryName = await findCategory({
-            categoryName: data.name,
+            categoryName: { $regex: `^${categoryName}$`, $options: 'i' },
           });
           if (iscategoryName) {
-            throw apiError.conflict(responseMessages.CATEGORY_ALREADY_EXISTS);
+            return res.json(apiError.conflict(responseMessages.CATEGORY_ALREADY_EXISTS));
           }
         }
         const updatedCategory = await updateCategory(
@@ -133,35 +113,6 @@ export class categoryController {
       return next(error);
     }
   }
-
-  /**
-   * @swagger
-   * /api/v1/category/deleteCategory/{categoryId}:
-   *   delete:
-   *     summary: admin delete category
-   *     tags:
-   *       - CATEGORY
-   *     description: admin can delete the category.
-   *     produces:
-   *       - application/json
-   *     parameters:
-   *       - name: authorization
-   *         description: authorization
-   *         in: header
-   *         required: true
-   *       - name: categoryId
-   *         description: categoryId
-   *         in: path
-   *         required: true
-   *     responses:
-   *       200:
-   *         description: Returns success message
-   *       404:
-   *         description: User not found || Data not found.
-   *       501:
-   *         description: Something went wrong!
-   */
-
   async deleteCategory(req, res, next) {
     const fields = Joi.object({
       categoryId: Joi.string().required(),
@@ -171,11 +122,11 @@ export class categoryController {
       const { categoryId } = validatedBody;
       console.log(validatedBody);
 
-      const adminDetails = await findSeller({ _id: req.userId });
-      if (!adminDetails) {
-        throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
-      }
+      const adminDetails = await findAdmin(req.userId);
 
+      if (!adminDetails) {
+        return res.json(apiError.notFound(responseMessages.ADMIN_NOT_FOUND));
+      }
       const categoryResult = await findCategory({ _id: categoryId });
       if (!categoryResult) {
         throw apiError.notFound(responseMessages.CATEGORY_NOT_FOUND);
@@ -192,42 +143,14 @@ export class categoryController {
       return next(error);
     }
   }
-
-  /**
-   * @swagger
-   * /api/v1/category/getAllCategory:
-   *   get:
-   *     summary: admin delete category
-   *     tags:
-   *       - CATEGORY
-   *     description: admin fetch all category.
-   *     produces:
-   *       - application/json
-   *     parameters:
-   *       - name: authorization
-   *         description: authorization
-   *         in: header
-   *         required: true
-   *     responses:
-   *       200:
-   *         description: Returns success message
-   *       404:
-   *         description: User not found || Data not found.
-   *       501:
-   *         description: Something went wrong!
-   */
-
   async getAllCategory(req, res, next) {
     try {
       // const adminDetails = await findSeller({ _id: req.userId });
-
       // if (!adminDetails) {
       //   throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
       // }
-
       const categoryResult = await findAllCategory();
-
-      if (!categoryResult || categoryResult.length==0) {
+      if (!categoryResult || categoryResult.length == 0) {
         throw apiError.notFound(responseMessages.CATEGORY_NOT_FOUND);
       }
       return res.json(
@@ -239,5 +162,6 @@ export class categoryController {
     }
   }
 }
-
 export default new categoryController();
+
+

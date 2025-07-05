@@ -1,7 +1,6 @@
 import { model, Schema } from "mongoose";
 import mongoose from "mongoose"
-import { statusOfApproval } from "../enums/statusOfApproval";
-import { required } from "joi";
+import { statusOfApproval } from "../enums/statusOfApproval.js";
 
 mongoose.pluralize(null);
 
@@ -45,7 +44,8 @@ const sellers = new Schema({
     },
     statusOfApproval: {
         type: String,
-        enum: [...Object.values(productSize), statusOfApproval.PENDING],
+        enum: [...Object.values(statusOfApproval)],
+        default: statusOfApproval.PENDING
     }
 }, { timestamps: true });
 export default model("sellers", sellers);

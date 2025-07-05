@@ -7,9 +7,9 @@ import bcrypt from "bcrypt";
 import successResponse from "../../../../../assets/response.js";
 import { status } from "../../../../enums/status.js";
 import { userType } from "../../../../enums/userType.js";
-
-
-export class userController {
+import sellerServices from "../../../v1/services/sellers.js";
+const { checkForRequest, createRequest, findUserById } = sellerServices
+export class sellerController {
     async requestForSeller(req, res, next) {
         const schema = Joi.object({
             name: Joi.string().min(2).max(30).required(),
@@ -38,30 +38,52 @@ export class userController {
                 gstNumber
             } = validatedBody;
 
+            const user = await findUserById(req.userId);
+            // console.log(req.userId);
+            
+            if (!user) {
+                return res.json(apiError.notFound(responseMessages.USER_NOT_FOUND));
+            }
+            validatedBody.buyerId = req.userId;
+            const checkAlreadyRequested = await checkForRequest(email, orgnizationPhone, gstNumber);
 
-            const checkAlreadyRequested = await checkForRequest(email, orgnizationName,);
-
-            if (user) {
-                if (user.status === "BLOCKED") {
-                    return res.json(apiError.forbidden(responseMessages.UNAUTHORIZED));
-                } else if (user.mobileNumber === mobileNumber) {
+            if (checkAlreadyRequested) {
+                if (checkAlreadyRequested.status === "PENDING") {
+                    return res.json(apiError.forbidden(responseMessages.REQUEST_ALREADY_PENDING));
+                } else if (checkAlreadyRequested.orgnizationPhone === orgnizationPhone) {
                     return res.json(
                         apiError.conflict(responseMessages.MOBILE_ALREADY_EXIST)
                     );
-                } else if (user.email === email) {
+                }
+                else if (checkAlreadyRequested.status === "REJECTED") {
+                    const result = await createRequest(validatedBody);
+                    return res.json(
+                        new successResponse(result, responseMessages.REAPPLIED_REQUEST)
+                    );
+                }
+                else if (checkAlreadyRequested.status === "BLOCK") {
+                    return res.json(
+                        apiError.conflict(responseMessages.REQUEST_BLOCKED)
+                    );
+                }
+                else if (checkAlreadyRequested.email === email) {
                     return res.json(
                         apiError.conflict(responseMessages.EMAIL_ALREADY_EXIST)
                     );
+                } else if (checkAlreadyRequested.gstNumber === gstNumber) {
+                    return res.json(
+                        apiError.conflict(responseMessages.GST_ALREADY_EXIST)
+                    );
                 } else {
                     return res.json(
-                        apiError.conflict(responseMessages.USER_ALREADY_EXIST)
+                        apiError.conflict(responseMessages.REQUEST_ALREADY_EXIST)
                     );
                 }
             }
             // await commonFunction.sendMail(email, validatedBody.otp);
-            const result = await createUser(validatedBody);
+            const result = await createRequest(validatedBody);
             return res.json(
-                new successResponse(result, responseMessages.USER_CREATED)
+                new successResponse(result, responseMessages.REQUEST_APPLIED)
             );
         } catch (error) {
             console.log("Error", error);
@@ -69,3 +91,5 @@ export class userController {
         }
     }
 }
+
+export default new sellerController();

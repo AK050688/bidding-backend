@@ -1,14 +1,17 @@
 import successResponse from "../../../../../assets/response.js";
 import responseMessages from "../../../../../assets/responseMessages.js";
-import {status} from "../../../../enums/status.js";
-import {userType} from "../../../../enums/userType.js";
+import { status } from "../../../../enums/status.js";
+import { statusOfApproval } from "../../../../enums/statusOfApproval.js";
+import { userType } from "../../../../enums/userType.js";
 import apiError from "../../../../helper/apiError.js";
 import commonFunction from "../../../../helper/utils.js";
 import userServices from "../../services/user.js";
+import sellerServices from "../../services/sellers.js";
 import bcrypt from "bcrypt";
 import Joi from "joi";
-const { updateUserById, findAdmin, paginate, dashboard, findUserById } = userServices;
-export class adminController {
+const { updateUserById, findAdmin, paginate, dashboard, findUserById, findAdminv2 } = userServices;
+const { findSellerById, updateSellerById } = sellerServices;
+class adminController {
   /**
    * @swagger
    * /api/v1/admin/adminLogin:
@@ -59,16 +62,16 @@ export class adminController {
         throw apiError.invalid(responseMessages.INVALID_PASSWORD);
       } else {
         const token = await commonFunction.getToken({ _id: adminDetails._id });
-         const sendResult = {
-        _id: adminDetails._id,
-        firstName: adminDetails.firstName,
-        lastName: adminDetails.lastName,
-        userType: adminDetails.userType,
-        email: adminDetails.email,
-        mobileNumber: adminDetails.mobileNumber,
-        addressLine: adminDetails.addressLine,
-        token: token,
-      };
+        const sendResult = {
+          _id: adminDetails._id,
+          firstName: adminDetails.firstName,
+          lastName: adminDetails.lastName,
+          userType: adminDetails.userType,
+          email: adminDetails.email,
+          mobileNumber: adminDetails.mobileNumber,
+          addressLine: adminDetails.addressLine,
+          token: token,
+        };
         return res.json(
           new successResponse(sendResult, responseMessages.LOGIN_SUCCESS)
         );
@@ -79,41 +82,6 @@ export class adminController {
     }
   }
 
-  /**
-   * @swagger
-   * /api/v1/admin/adminResetPassword:
-   *   put:
-   *     summary: Admin Login page
-   *     tags:
-   *       - ADMIN
-   *     description: admin login
-   *     produces:
-   *       - application/json
-   *     parameters:
-   *       - name: authorization
-   *         description: authorization
-   *         in: header
-   *         required: true
-   *       - name: oldPassword
-   *         description: oldPassword
-   *         in: formData
-   *         required: true
-   *       - name: newPassword
-   *         description: newPassword
-   *         in: formData
-   *         required: true
-   *       - name: confirmNewPassword
-   *         description: confirmNewPassword
-   *         in: formData
-   *         required: true
-   *     responses:
-   *       200:
-   *         description: Returns success message
-   *       404:
-   *         description: User not found || Data not found.
-   *       501:
-   *         description: Something went wrong!
-   */
 
   async adminResetPassword(req, res, next) {
     try {
@@ -164,37 +132,6 @@ export class adminController {
     }
   }
 
-  /**
-   * @swagger
-   * /api/v1/admin/paginateAlluserList:
-   *   get:
-   *     summary: admi get all users
-   *     tags:
-   *       - ADMIN
-   *     description: admin get all users in pagination list and also pass the page and limit in path
-   *     produces:
-   *       - application/json
-   *     parameters:
-   *       - name: authorization
-   *         description: authorization
-   *         in: header
-   *         required: true
-   *       - name: page
-   *         description: page
-   *         in: path
-   *         required: false
-   *       - name: limit
-   *         description: limit
-   *         in: path
-   *         required: false
-   *     responses:
-   *       200:
-   *         description: Returns success message
-   *       404:
-   *         description: User not found || Data not found.
-   *       501:
-   *         description: Something went wrong!
-   */
 
   async paginateAlluserList(req, res, next) {
     try {
@@ -204,7 +141,7 @@ export class adminController {
       } else if (limit < 1) {
         throw apiError.badRequest(responseMessages.LIMIT_UNSPECIFIED);
       }
-      const query = { userType: userType.USER  };
+      const query = { userType: userType.USER };
       const paginateResult = await paginate(query, page, limit);
       if (!paginateResult) {
         throw apiError.notFound(responseMessages.NOT_FOUND);
@@ -217,173 +154,119 @@ export class adminController {
       return next(error);
     }
   }
-  
-  /**
-   * @swagger
-   * /api/v1/admin/dashboard:
-   *   get:
-   *     summary: admin as a spectetor for dashboard
-   *     tags:
-   *       - ADMIN
-   *     description: total:- successfull order,product listed, customers
-   *     produces:
-   *       - application/json
-   *     parameters:
-   *       - name: authorization
-   *         description: authorization
-   *         in: header
-   *         required: true
-   *     responses:
-   *       200:
-   *         description: Returns success message
-   *       404:
-   *         description: User not found || Data not found.
-   *       501:
-   *         description: Something went wrong!
-   */
 
-  async dashboard(req, res,next){
+  async dashboard(req, res, next) {
     try {
-      const admin =  await findAdmin(req.userId)
-      if(!admin){
-        throw  apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
+      const admin = await findAdmin(req.userId)
+      if (!admin) {
+        throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
       }
       const results = await dashboard();
-      
-      if(!dashboard){
-      throw apiError.badRequest(responseMessages.UNABLE_TO_GET_DASHBOARD)
+
+      if (!dashboard) {
+        throw apiError.badRequest(responseMessages.UNABLE_TO_GET_DASHBOARD)
       }
 
       return res.json(new successResponse(results, responseMessages.SUCCESS))
     } catch (error) {
-      console.log("error..",error);
+      console.log("error..", error);
       return next(error)
     }
 
   }
 
-    /**
-   * @swagger
-   * /api/v1/admin/markUserStatus:
-   *   put:
-   *     summary: admin update user status
-   *     tags:
-   *       - ADMIN
-   *     description: admin can update user status.
-   *     produces:
-   *       - application/json
-   *     parameters:
-   *       - name: authorization
-   *         description: authorization
-   *         in: header
-   *         required: true
-   *       - name: userStatus
-   *         description: userStatus
-   *         in: formData
-   *         required: true
-   *       - name: userId
-   *         description: userId
-   *         in: formData
-   *         required: true
-   *     responses:
-   *       200:
-   *         description: Returns success message
-   *       404:
-   *         description: User not found || Data not found.
-   *       501:
-   *         description: Something went wrong!
-   */
 
-  async markUserStatus(req,res,next){
-    const fields =  Joi.object({
-      userStatus:Joi.string().valid('ACTIVE', 'BLOCKED','DELETE'),
-      userId:Joi.string().required()
+  async markUserStatus(req, res, next) {
+    const fields = Joi.object({
+      userStatus: Joi.string().valid('ACTIVE', 'BLOCKED', 'DELETE'),
+      userId: Joi.string().required()
     })
     try {
-      const validate =  await fields.validateAsync(req.body);
-      console.log(validate,">>>>>>>>>>>>");
-      console.log(req.body,"?????????????");
-      
-      
-      const {userStatus,userId}=validate
-      const isAdmin =  await findAdmin(req.userid);
-      if(!isAdmin){
+      const validate = await fields.validateAsync(req.body);
+      console.log(validate, ">>>>>>>>>>>>");
+      console.log(req.body, "?????????????");
+
+
+      const { userStatus, userId } = validate
+      const isAdmin = await findAdmin(req.userid);
+      if (!isAdmin) {
         throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
       }
-      const updateUser   =  await updateUserById({_id:userId},{status:userStatus})
-      if(!updateUser){
+      const updateUser = await updateUserById({ _id: userId }, { status: userStatus })
+      if (!updateUser) {
         throw apiError.badRequest(responseMessages.USER_STATUS_NOT_UPDATED)
-        
+
       }
       return res.json(new successResponse(responseMessages.USER_STATUS_UPDATED))
-      
-      
+
+
     } catch (error) {
-      console.log("error..",error);
+      console.log("error..", error);
       return next()
-      
+
     }
   }
-    /**
-   * @swagger
-   * /api/v1/admin/markUserStatus:
-   *   put:
-   *     summary: admin update user status
-   *     tags:
-   *       - ADMIN
-   *     description: admin can update user status.
-   *     produces:
-   *       - application/json
-   *     parameters:
-   *       - name: authorization
-   *         description: authorization
-   *         in: header
-   *         required: true
-   *       - name: userStatus
-   *         description: userStatus
-   *         in: formData
-   *         required: true
-   *       - name: userId
-   *         description: userId
-   *         in: formData
-   *         required: true
-   *     responses:
-   *       200:
-   *         description: Returns success message
-   *       404:
-   *         description: User not found || Data not found.
-   *       501:
-   *         description: Something went wrong!
-   */
 
-  async markOrderStatus(req,res,next){
-    const fields =  Joi.object({
-      orderStatus:Joi.string().valid('ACTIVE', 'BLOCKED','DELETE'),
-      transactionId:Joi.string().required()
+  async markOrderStatus(req, res, next) {
+    const fields = Joi.object({
+      orderStatus: Joi.string().valid('ACTIVE', 'BLOCKED', 'DELETE'),
+      transactionId: Joi.string().required()
     })
     try {
-      const validate =  await fields.validateAsync(req.body);
-      console.log(validate,">>>>>>>>>>>>");
-      console.log(req.body,"?????????????");
-      
-      
-      const {userStatus,userId}=validate
-      const isAdmin =  await findAdmin(req.userid);
-      if(!isAdmin){
+      const validate = await fields.validateAsync(req.body);
+      console.log(validate, ">>>>>>>>>>>>");
+      console.log(req.body, "?????????????");
+
+
+      const { userStatus, userId } = validate
+      const isAdmin = await findAdmin(req.userid);
+      if (!isAdmin) {
         throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
       }
-      const updateUser   =  await updateUserById({_id:userId},{status:userStatus})
-      if(!updateUser){
+      const updateUser = await updateUserById({ _id: userId }, { status: userStatus })
+      if (!updateUser) {
         throw apiError.badRequest(responseMessages.USER_STATUS_NOT_UPDATED)
-        
+
       }
       return res.json(new successResponse(responseMessages.USER_STATUS_UPDATED))
-      
-      
+
+
     } catch (error) {
-      console.log("error..",error);
-      return next()
-      
+      console.log("error..", error);
+      return next(error)
+
+    }
+  }
+
+  async requestApproval(req, res, next) {
+    const fields = Joi.object({
+      sellerId: Joi.string().required()
+        .required(),
+      statusOfApproval: Joi.string()
+        .valid(...Object.values(statusOfApproval))
+        .required(),
+    })
+
+    try {
+      const validate = await fields.validateAsync(req.body);
+      const { sellerId, statusOfApproval } = validate
+      const isAdmin = await findAdminv2(req.userid);
+      if (!isAdmin) {
+        throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
+      }
+      const isSeller = await findSellerById(sellerId)
+      if (!isSeller) {
+        throw apiError.badRequest(responseMessages.USER_NOT_FOUND)
+      }
+
+      const updateStatus = await updateSellerById(sellerId, { $set: { statusOfApproval: statusOfApproval } })
+      return res.json(new successResponse(updateStatus, responseMessages.USER_STATUS_UPDATED))
+
+
+    } catch (error) {
+      console.log("error..", error);
+      return next(error)
+
     }
   }
 

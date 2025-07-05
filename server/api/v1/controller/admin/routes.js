@@ -8,3 +8,12 @@ export default Express.Router()
     .get("/paginateAlluserList", auth.verifyToken, controller.paginateAlluserList)
     .get("/dashboard", auth.verifyToken, controller.dashboard)
     .put("/markUserStatus", auth.verifyToken, controller.markUserStatus)
+    .put("/requestApproval", auth.verifyToken, controller.requestApproval)
+    
+
+
+
+
+
+
+    

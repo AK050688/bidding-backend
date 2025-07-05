@@ -1,35 +1,37 @@
-import userModel from "../../../models/user.js"
+import sellerModel from "../../../models/seller.js"
 import { status } from "../../../enums/status.js";
 import { userType } from "../../../enums/userType.js";
+import userModel from "../../../models/user.js"
+import { statusOfApproval } from "../../../enums/statusOfApproval.js";
 
-const userServices = {
-    checkUserExists: async (email, mobileNumber) => {
-        let query = { $and: [{ status: { $ne: status.DELETE } }, { $or: [{ email: email }, { mobileNumber: mobileNumber }] }] }
-        return await userModel.findOne(query);
+const sellerServices = {
+
+    checkForRequest: async (email, orgnizationPhone, gstNumber) => {
+        const query = { $or: [{ email: email }, { orgnizationPhone: orgnizationPhone }, { gstNumber: gstNumber }] }
+        const user = await sellerModel.findOne(query);
+        return user
     },
-    createUser: async (insertObj) => {
-        return await userModel.create(insertObj);
-    },
-    findUser: async (email) => {
-        return await userModel.findOne({ $and: [{ email: email }, { status: { $ne: status.BLOCK } }] });
-    },
-    findUserV2: async (email) => {
-        return await userModel.findOne({ $and: [{ email: email }, { status: { $ne: status.DELETE } }] });
+    createRequest: async (insertObj) => {
+        return await sellerModel.create(insertObj);
     },
     findUserById: async (id) => {
-        return await userModel.findOne({ $and: [{ _id: id }, { status: { $ne: status.DELETE } }] });
+        return await userModel.findOne({ $and: [{ _id: id }, { status: { $ne: status.BLOCK } }] });
     },
-    updateUserById: async (query, obj) => {
-        return await userModel.findByIdAndUpdate(query, obj, { new: true });
+    findSellerById: async (id) => {
+        return await sellerModel.findOne({ $and: [{ _id: id }, { statusOfApproval: { $ne: statusOfApproval.REJECTED } }] });
+    },
+
+    updateSellerById: async (id, obj) => {
+        return await sellerModel.findByIdAndUpdate({_id:id}, obj, { new: true });
     },
     updateUser: async (query, obj) => {
-        return await userModel.findOneAndUpdate(query, obj, { new: true });
+        return await sellerModel.findOneAndUpdate(query, obj, { new: true });
     },
     findAll: async () => {
-        return await userModel.find()
+        return await sellerModel.find()
     },
     findAdmin: async (id) => {
-        const admin = await userModel.findOne({ $and: [{ _id: id }, { userType: userType.ADMIN }] });
+        const admin = await sellerModel.findOne({ $and: [{ _id: id }, { userType: userType.ADMIN }] });
         return admin;
     },
     paginate: async (query, page, limit) => {
@@ -39,7 +41,7 @@ const userServices = {
                 limit: parseInt(limit) || parseInt(5),
                 select: '-password ',
             };
-            const data = await userModel.paginate(query, options)
+            const data = await sellerModel.paginate(query, options)
             console.log(data);
             return data;
         } catch (error) {
@@ -58,4 +60,4 @@ const userServices = {
     },
 
 }
-export default userServices;
+export default sellerServices;

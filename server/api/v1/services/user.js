@@ -31,6 +31,10 @@ const userServices = {
   findAdmin: async (query) => {
     return await userModel.findOne(query);
   },
+    findAdminv2: async (id) => {
+          const admin = await userModel.findOne({ $and: [{ _id: id }, { userType: userType.ADMIN }] });
+          return admin;
+      },
   paginate: async (query, page, limit) => {
     try {
       const options = {
