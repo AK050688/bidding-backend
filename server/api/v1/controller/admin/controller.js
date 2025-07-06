@@ -12,33 +12,6 @@ import Joi from "joi";
 const { updateUserById, findAdmin, paginate, dashboard, findUserById, findAdminv2 } = userServices;
 const { findSellerById, updateSellerById } = sellerServices;
 class adminController {
-  /**
-   * @swagger
-   * /api/v1/admin/adminLogin:
-   *   post:
-   *     summary: Admin Login page
-   *     tags:
-   *       - ADMIN
-   *     description: admin login
-   *     produces:
-   *       - application/json
-   *     parameters:
-   *       - name: email
-   *         description: email
-   *         in: formData
-   *         required: true
-   *       - name: password
-   *         description: password
-   *         in: formData
-   *         required: true
-   *     responses:
-   *       200:
-   *         description: Returns success message
-   *       404:
-   *         description: User not found || Data not found.
-   *       501:
-   *         description: Something went wrong!
-   */
 
   async adminLogin(req, res, next) {
     const fields = Joi.object({
@@ -183,9 +156,6 @@ class adminController {
     })
     try {
       const validate = await fields.validateAsync(req.body);
-      console.log(validate, ">>>>>>>>>>>>");
-      console.log(req.body, "?????????????");
-
 
       const { userStatus, userId } = validate
       const isAdmin = await findAdmin(req.userid);
@@ -214,8 +184,7 @@ class adminController {
     })
     try {
       const validate = await fields.validateAsync(req.body);
-      console.log(validate, ">>>>>>>>>>>>");
-      console.log(req.body, "?????????????");
+  
 
 
       const { userStatus, userId } = validate

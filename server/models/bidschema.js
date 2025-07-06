@@ -1,14 +1,13 @@
 import { model, Schema } from "mongoose";
 import mongoose from "mongoose"
 import { statusOfApproval } from "../enums/statusOfApproval.js";
-import { required } from "joi";
 
 mongoose.pluralize(null);
 
 const bids = new Schema({
     productId: {
         type: mongoose.Types.ObjectId,
-        ref: "sellers",
+       ref: "products",
         required: true,
     },
     buyerId: {
