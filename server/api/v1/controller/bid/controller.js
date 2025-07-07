@@ -67,6 +67,43 @@ class bidController {
       return next(error);
     }
   }
+  async getBidOnProduct(req, res, next) {
+    const fields = Joi.object({
+      productId: Joi.string().hex().length(24).required(),
+      buyerId: Joi.string().hex().length(24).required(),
+    });
+
+    try {
+      const { error, value } = fields.validate(req.body);
+      if (error) {
+        console.error(error.details);
+        return res.json({ error: error.message });
+      }
+
+      const { productId,buyerId } = value;
+
+      const user = await findUserById(buyerId);
+      if (!user) {
+        return res.json(new apiError.notFound(responseMessages.USER_NOT_FOUND));
+      }
+console.log(user,">>>>>");
+
+      if (!user.userType == userType.BUYER || !user.userType == userType.ADMIN ) {
+        return res.json(apiError.forbidden(responseMessages.UNAUTHORIZED));
+      }
+      const isProduct = await checkProduct(productId);
+      if (!isProduct) {
+        return res.json(apiError.notFound(responseMessages.PRODUCT_NOT_FOUND));
+      }
+
+
+      const isAlreadyBid = checkPlacedBid(buyerId, productId);
+      return res.json(new successResponse(isAlreadyBid, responseMessages.SUCCESS));
+    } catch (error) {
+      console.log("Error placing bid:", error);
+      return next(error);
+    }
+  }
 }
 
 export default new bidController();

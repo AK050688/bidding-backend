@@ -10,9 +10,8 @@ import sellerServices from "../../services/sellers.js";
 import bcrypt from "bcrypt";
 import Joi from "joi";
 const { updateUserById, findAdmin, paginate, dashboard, findUserById, findAdminv2 } = userServices;
-const { findSellerById, updateSellerById } = sellerServices;
+const { findSellerById, updateSellerById, findAllRequest } = sellerServices;
 class adminController {
-
   async adminLogin(req, res, next) {
     const fields = Joi.object({
       email: Joi.string().required(),
@@ -54,7 +53,6 @@ class adminController {
       return next(error);
     }
   }
-
 
   async adminResetPassword(req, res, next) {
     try {
@@ -105,7 +103,6 @@ class adminController {
     }
   }
 
-
   async paginateAlluserList(req, res, next) {
     try {
       const { page, limit } = req.query;
@@ -128,26 +125,25 @@ class adminController {
     }
   }
 
-  async dashboard(req, res, next) {
-    try {
-      const admin = await findAdmin(req.userId)
-      if (!admin) {
-        throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
-      }
-      const results = await dashboard();
+  // async dashboard(req, res, next) {
+  //   try {
+  //     const admin = await findAdmin(req.userId)
+  //     if (!admin) {
+  //       throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
+  //     }
+  //     const results = await dashboard();
 
-      if (!dashboard) {
-        throw apiError.badRequest(responseMessages.UNABLE_TO_GET_DASHBOARD)
-      }
+  //     if (!dashboard) {
+  //       throw apiError.badRequest(responseMessages.UNABLE_TO_GET_DASHBOARD)
+  //     }
 
-      return res.json(new successResponse(results, responseMessages.SUCCESS))
-    } catch (error) {
-      console.log("error..", error);
-      return next(error)
-    }
+  //     return res.json(new successResponse(results, responseMessages.SUCCESS))
+  //   } catch (error) {
+  //     console.log("error..", error);
+  //     return next(error)
+  //   }
 
-  }
-
+  // }
 
   async markUserStatus(req, res, next) {
     const fields = Joi.object({
@@ -177,35 +173,35 @@ class adminController {
     }
   }
 
-  async markOrderStatus(req, res, next) {
-    const fields = Joi.object({
-      orderStatus: Joi.string().valid('ACTIVE', 'BLOCKED', 'DELETE'),
-      transactionId: Joi.string().required()
-    })
-    try {
-      const validate = await fields.validateAsync(req.body);
-  
+  // async markOrderStatus(req, res, next) {
+  //   const fields = Joi.object({
+  //     orderStatus: Joi.string().valid('ACTIVE', 'BLOCKED', 'DELETE'),
+  //     transactionId: Joi.string().required()
+  //   })
+  //   try {
+  //     const validate = await fields.validateAsync(req.body);
 
 
-      const { userStatus, userId } = validate
-      const isAdmin = await findAdmin(req.userid);
-      if (!isAdmin) {
-        throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
-      }
-      const updateUser = await updateUserById({ _id: userId }, { status: userStatus })
-      if (!updateUser) {
-        throw apiError.badRequest(responseMessages.USER_STATUS_NOT_UPDATED)
 
-      }
-      return res.json(new successResponse(responseMessages.USER_STATUS_UPDATED))
+  //     const { userStatus, userId } = validate
+  //     const isAdmin = await findAdmin(req.userid);
+  //     if (!isAdmin) {
+  //       throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
+  //     }
+  //     const updateUser = await updateUserById({ _id: userId }, { status: userStatus })
+  //     if (!updateUser) {
+  //       throw apiError.badRequest(responseMessages.USER_STATUS_NOT_UPDATED)
+
+  //     }
+  //     return res.json(new successResponse(responseMessages.USER_STATUS_UPDATED))
 
 
-    } catch (error) {
-      console.log("error..", error);
-      return next(error)
+  //   } catch (error) {
+  //     console.log("error..", error);
+  //     return next(error)
 
-    }
-  }
+  //   }
+  // }
 
   async requestApproval(req, res, next) {
     const fields = Joi.object({
@@ -219,28 +215,71 @@ class adminController {
     try {
       const validate = await fields.validateAsync(req.body);
       const { sellerId, statusOfApproval } = validate
-      const isAdmin = await findAdminv2(req.userid);
+      const isAdmin = await findAdminv2(req.userId);
       if (!isAdmin) {
-        throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
+        return res.json(
+          apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
+        );
+
       }
       const isSeller = await findSellerById(sellerId)
       if (!isSeller) {
-        throw apiError.badRequest(responseMessages.USER_NOT_FOUND)
+         return res.json(
+          apiError.badRequest(responseMessages.USER_NOT_FOUND)
+        );
       }
-
-      const updateStatus = await updateSellerById(sellerId, { $set: { statusOfApproval: statusOfApproval } })
+       const updateStatus = await updateSellerById(sellerId, { $set: { statusOfApproval: statusOfApproval } })
       return res.json(new successResponse(updateStatus, responseMessages.USER_STATUS_UPDATED))
-
-
     } catch (error) {
       console.log("error..", error);
       return next(error)
 
     }
   }
+  async getAllRequest(req, res, next) {
+    const fields = Joi.object({
+      statusOfApproval: Joi.string()
+        .valid(...Object.values(statusOfApproval))
+        .required(),
+    })
 
+    try {
+      const validate = await fields.validateAsync(req.body);
+      const { statusOfApproval } = validate
+      const isAdmin = await findAdminv2(req.userId);
+      if (!isAdmin) {
+        return res.json(
+          apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
+        );
+      }
+      const updateStatus = await findAllRequest({ statusOfApproval: statusOfApproval  })
+      return res.json(new successResponse(updateStatus, responseMessages.SUCCESS))
+    } catch (error) {
+      console.log("error..", error);
+      return next(error)
 
+    }
+  }
+  async getSpecificRequest(req, res, next) {
+    const fields = Joi.object({
+      requestId: Joi.string().required(),
+    })
+    try {
+      const validate = await fields.validateAsync(req.params);
+      const { requestId } = validate
+      const isAdmin = await findAdminv2(req.userId);
+      if (!isAdmin) {
+        return res.json(
+          apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
+        );
+      }
+      const updateStatus = await findSellerById(requestId)
+      return res.json(new successResponse(updateStatus, responseMessages.SUCCESS))
+    } catch (error) {
+      console.log("error..", error);
+      return next(error)
 
-
+    }
+  }
 }
 export default new adminController();

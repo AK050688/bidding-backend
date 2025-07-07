@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import config from "config";
 import jwt from "jsonwebtoken";
-
+import cron  from "node-cron"
 
 
 
@@ -131,6 +131,14 @@ getOTPEmailTemplate(otp) {
       const token = jwt.sign(payload, config.get("jwtsecret"), {
         expiresIn: "24h",
       });
+      return token;
+    } catch (error) {
+      return error;
+    }
+  },
+  expireBid: async (payload) => {
+    try {
+     
       return token;
     } catch (error) {
       return error;

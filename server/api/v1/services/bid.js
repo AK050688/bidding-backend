@@ -22,9 +22,7 @@ export default {
     return await bidModel.create(inserObj);
   },
   checkPlacedBid: async (buyerId, productId) => {
-    console.log(buyerId, productId);
-    
-    return await bidModel.findOne({ buyerId: buyerId, productId: productId });
+    return await bidModel.find({ buyerId: buyerId, productId: productId });
   },
   checkProduct: async (productId) => {
     const updatedProduct = await productModel.findById(productId);

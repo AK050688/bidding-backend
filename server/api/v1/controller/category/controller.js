@@ -15,7 +15,8 @@ const {
   categoryId,
   deleteCategory,
   findAllCategory,
-  findAdmin
+  findAdmin,
+  findProductAssosiatedWithCategory
 } = categoryServices;
 export class categoryController {
 
@@ -41,7 +42,7 @@ export class categoryController {
         return res.json(apiError.forbidden(responseMessages.UNAUTHORIZED));
       }
       if (user.userType == userType.SELLER) {
-        const sellerDetails = await findSeller( req.userId);
+        const sellerDetails = await findSeller(req.userId);
         if (!sellerDetails) {
           return res.json(apiError.notFound(responseMessages.SELLER_NOT_FOUND));
         }
@@ -131,9 +132,16 @@ export class categoryController {
       if (!categoryResult) {
         throw apiError.notFound(responseMessages.CATEGORY_NOT_FOUND);
       }
+
+      const findProductRelatedCategory = await findProductAssosiatedWithCategory({ categoryId: categoryId })
+      console.log(findProductRelatedCategory);
+
+      if (findProductRelatedCategory.lengt >= 1) {
+        return res.json(apiError.conflict(responseMessages.CATEGORY_HAS_PRODUCTS))
+      }
       const result = await deleteCategory({ _id: categoryId });
       if (!result) {
-        throw apiError.badRequest(responseMessages.CATEGORY_NOT_DELETE);
+        return res.json(apiError.badRequest(responseMessages.CATEGORY_NOT_DELETE))
       }
       return res.json(
         new successResponse(result, responseMessages.CATEGORY_DELETE)
@@ -151,7 +159,7 @@ export class categoryController {
       // }
       const categoryResult = await findAllCategory();
       if (!categoryResult || categoryResult.length == 0) {
-        throw apiError.notFound(responseMessages.CATEGORY_NOT_FOUND);
+        return res.json(apiError.notFound(responseMessages.CATEGORY_NOT_FOUND))
       }
       return res.json(
         new successResponse(categoryResult, responseMessages.CATEGORY_FOUND)

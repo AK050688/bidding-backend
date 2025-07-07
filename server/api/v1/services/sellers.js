@@ -18,17 +18,16 @@ const sellerServices = {
         return await userModel.findOne({ $and: [{ _id: id }, { status: { $ne: status.BLOCK } }] });
     },
     findSellerById: async (id) => {
-        return await sellerModel.findOne({ $and: [{ _id: id }, { statusOfApproval: { $ne: statusOfApproval.REJECTED } }] });
+        return await sellerModel.findOne({ $and: [{ _id: id }, { statusOfApproval: { $ne: statusOfApproval.REJECTED } }] }).populate({ path: "buyerId", select: "firstName lastName email mobileNumber addressLine city zip status userType" });
     },
-
     updateSellerById: async (id, obj) => {
-        return await sellerModel.findByIdAndUpdate({_id:id}, obj, { new: true });
+        return await sellerModel.findByIdAndUpdate({ _id: id }, obj, { new: true });
     },
     updateUser: async (query, obj) => {
         return await sellerModel.findOneAndUpdate(query, obj, { new: true });
     },
-    findAll: async () => {
-        return await sellerModel.find()
+    findAllRequest: async (query) => {
+        return await sellerModel.find(query).populate({ path: "buyerId", select: "firstName lastName email mobileNumber addressLine city zip status userType" })
     },
     findAdmin: async (id) => {
         const admin = await sellerModel.findOne({ $and: [{ _id: id }, { userType: userType.ADMIN }] });

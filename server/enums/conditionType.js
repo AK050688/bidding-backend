@@ -1,0 +1,9 @@
+export const conditionType = Object.freeze({
+  BRAND_NEW: "BRAND NEW",
+  OPEN_BOX: "OPEN BOX",
+  VERY_GOOD: "VERY GOOD",
+  GOOD: "GOOD",
+  ACCEPTABLE:"ACCEPTABLE",
+  DEFECTIVE:"DEFECTIVE",
+  NOT_TESTED:"NOT TESTED"
+});

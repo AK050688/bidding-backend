@@ -99,7 +99,7 @@ export class userController {
       if (!user) {
         return res.json(apiError.notFound(responseMessages.USER_NOT_FOUND));
       }
-      if (user.status === "BLOCKED" || user.status === "DELETED") {
+      if (user.status === status.BLOCK || user.status === status.DELETE) {
         return res.json(apiError.forbidden(responseMessages.UNAUTHORIZED));
       }
 

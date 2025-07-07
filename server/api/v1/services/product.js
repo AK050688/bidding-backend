@@ -68,4 +68,16 @@ export default {
     const categoryResult = await categoryModel.findById(id);
     return categoryResult;
   },
+  findProductsOfSeller: async (id) => {
+    const productResult = await productModel.find({ buyerId: id });
+    return productResult;
+  },
+  deleteProduct: async (productId) => {
+    const deleteProduct = await productModel.findByIdAndDelete(productId);
+    return deleteProduct;
+  },
+  findSellerById: async (productId) => {
+    const deleteProduct = await sellerModel.findById({ _id: productId });
+    return deleteProduct;
+  },
 };

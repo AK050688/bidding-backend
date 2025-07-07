@@ -1,4 +1,5 @@
 import categoryModel from "../../../models/category.js"
+import productModel from "../../../models/product.js"
 import userModel from "../../../models/user.js"
 import sellerModel from "../../../models/seller.js"
 import { userType } from "../../../enums/userType.js";
@@ -39,6 +40,10 @@ export default {
     },
     findAllCategory: async (query) => {
         const categoryResult = await categoryModel.find(query);
+        return categoryResult;
+    },
+    findProductAssosiatedWithCategory: async (query) => {
+        const categoryResult = await productModel.find(query);
         return categoryResult;
     }
 
