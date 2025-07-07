@@ -1,6 +1,6 @@
 import categoryModel from "../../../models/category.js"
 import userModel from "../../../models/user.js"
-import sellerModel from "../../../models/user.js"
+import sellerModel from "../../../models/seller.js"
 import { userType } from "../../../enums/userType.js";
 import { statusOfApproval } from "../../../enums/statusOfApproval.js";
 import { status } from "../../../enums/status.js";

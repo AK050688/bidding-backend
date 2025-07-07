@@ -41,7 +41,7 @@ export class categoryController {
         return res.json(apiError.forbidden(responseMessages.UNAUTHORIZED));
       }
       if (user.userType == userType.SELLER) {
-        const sellerDetails = await findSeller({ _id: req.userId });
+        const sellerDetails = await findSeller( req.userId);
         if (!sellerDetails) {
           return res.json(apiError.notFound(responseMessages.SELLER_NOT_FOUND));
         }

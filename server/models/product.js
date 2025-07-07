@@ -1,7 +1,6 @@
 import { model, Schema } from "mongoose";
 import mongoose from "mongoose"
 import { statusOfApproval } from "../enums/statusOfApproval.js";
-import { required } from "joi";
 
 mongoose.pluralize(null);
 
@@ -28,6 +27,10 @@ const products = new Schema({
     },
 
     isSold: {
+        type: Boolean,
+        default: false
+    },
+    isExpired: {
         type: Boolean,
         default: false
     },
