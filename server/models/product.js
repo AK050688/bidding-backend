@@ -51,10 +51,6 @@ const products = new Schema({
         type: Boolean,
         default: false
     },
-    // isExpired: {
-    //     type: Boolean,
-    //     default: false
-    // },
     minBid: {
         type: Number,
         required: true,
