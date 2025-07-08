@@ -20,6 +20,7 @@ export default {
 	USER_ALREADY_EXIST: 'User already exist.',
 	REQUEST_ALREADY_EXIST: 'Request already exist.',
 	USER_NOT_FOUND: 'User not found.',
+	CANT_SEE_PRODUCT: 'Not allowed to see the product as seller can only see there own products.',
 	PROFILE_UPDATED: 'Profile updated successfully.',
 	USER_EXISTS: 'User exists found successfully',
 	MOBILE_EXIST: 'This mobile number already exists.',
@@ -158,6 +159,8 @@ export default {
 	SLOT_CREATED: "Slots has been created successfully",
 	UNABLE_TO_GET_DASHBOARD: "Unable to get the dashboard.",
 	REQUEST_ALREADY_PENDING: "Request is already pending.",
+	SUPPORT_ALREADY_PENDING: "Support is already pending.",
+	SUPPORT_NOT_ALLOWED: "This email or phone number has been blocked and reported.",
 
 
 

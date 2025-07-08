@@ -29,38 +29,18 @@ export default {
 
     return updatedProduct;
   },
-    getBidsOnProduct: async (productId, userId, pagination) => {
+  getBidsOnProduct: async (productId, userId, pagination) => {
     try {
-      // Validate product
-      const product = await productModel.findById(productId);
-      if (!product) {
-        throw new Error("Product not found");
-      }
-
-      // Check if bidding is active
-      const currentTime = new Date();
-      if (
-        currentTime < product.startTime ||
-        currentTime > product.endTime ||
-        product.isSold
-      ) {
-        throw new Error("Bidding is not active for this product");
-      }
-
       const { page = 1, limit = 10 } = pagination;
-
-      // Query bids for the authenticated user only
       const query = { productId, buyerId: userId };
-
       const skip = (page - 1) * limit;
       const total = await bidModel.countDocuments(query);
       const bids = await bidModel
         .find(query)
-        .sort({ createdAt: -1 }) // Sort by most recent bid
+        .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean();
-
       return {
         bids,
         total,
@@ -69,10 +49,10 @@ export default {
         totalPages: Math.ceil(total / limit),
       };
     } catch (error) {
-      throw new Error(`Error fetching bids on product: ${error.message}`);
+      throw new Error(`Error fetching bids on product: ${error}`);
     }
   },
-    getSellerProductBids: async (productId, userId, pagination) => {
+  getSellerProductBids: async (productId, userId, pagination) => {
     try {
       // Validate product
       const product = await productModel.findById(productId);
@@ -133,6 +113,150 @@ export default {
       };
     } catch (error) {
       throw new Error(`Error fetching seller product bids: ${error.message}`);
+    }
+  },
+  getSellerProductsWithBids: async (sellerId, userId, pagination) => {
+    try {
+      // // Validate seller
+      // const seller = await sellerModel.findById(sellerId);
+      // if (!seller) {
+      //   throw new Error("Seller not found");
+      // }
+
+      // // Check if user is admin or seller
+      // const user = await userModel.findById(userId);
+      // if (!user) {
+      //   throw new Error("User not found");
+      // }
+
+      // if (user.userType !== userType.ADMIN) {
+      //   // For non-admins, verify seller status and ownership
+      //   const requestingSeller = await sellerModel.findOne({
+      //     buyerId: userId,
+      //     statusOfApproval: statusOfApproval.ACCEPTED,
+      //   });
+      //   if (!requestingSeller) {
+      //     throw new Error("Seller not found or not approved");
+      //   }
+      //   if (seller._id.toString() !== requestingSeller._id.toString()) {
+      //     throw new Error("Unauthorized: You can only view your own products");
+      //   }
+      // }
+
+      const { page = page || 1, limit = limit || 10 } = pagination;
+
+      // Query live products for the seller
+      const query = {
+        $and: [
+          { sellerId },
+          { startTime: { $lte: new Date() } },
+          { endTime: { $gte: new Date() } },
+          { isSold: false },
+        ],
+      };
+
+      const skip = (page - 1) * limit;
+      const total = await productModel.countDocuments(query);
+      const products = await productModel
+        .find(query)
+        .sort({ startTime: -1 }) // Sort by most recent
+        .skip(skip)
+        .limit(limit)
+        .lean();
+
+      // Fetch bids for each product
+      const productIds = products.map((product) => product._id);
+      const bids = await bidModel
+        .find({ productId: { $in: productIds } })
+        .sort({ createdAt: -1 }) // Sort bids by most recent
+        .lean();
+
+      // Combine products with their bids
+      const productsWithBids = products.map((product) => ({
+        ...product,
+        bids: bids.filter((bid) => bid.productId.toString() === product._id.toString()),
+      }));
+
+      return {
+        products: productsWithBids,
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      throw new Error(`Error fetching seller products with bids: ${error.message}`);
+    }
+  },
+  getSellerProductsWithEndBids: async (sellerId, userId, pagination) => {
+    try {
+      // // Validate seller
+      // const seller = await sellerModel.findById(sellerId);
+      // if (!seller) {
+      //   throw new Error("Seller not found");
+      // }
+
+      // // Check if user is admin or seller
+      // const user = await userModel.findById(userId);
+      // if (!user) {
+      //   throw new Error("User not found");
+      // }
+
+      // if (user.userType !== userType.ADMIN) {
+      //   // For non-admins, verify seller status and ownership
+      //   const requestingSeller = await sellerModel.findOne({
+      //     buyerId: userId,
+      //     statusOfApproval: statusOfApproval.ACCEPTED,
+      //   });
+      //   if (!requestingSeller) {
+      //     throw new Error("Seller not found or not approved");
+      //   }
+      //   if (seller._id.toString() !== requestingSeller._id.toString()) {
+      //     throw new Error("Unauthorized: You can only view your own products");
+      //   }
+      // }
+
+      const { page = page || 1, limit = limit || 10 } = pagination;
+
+      // Query live products for the seller
+      const query = {
+        $and: [
+          { sellerId },
+          { endTime: { $gte: new Date() } },
+        ],
+      };
+
+      const skip = (page - 1) * limit;
+      const total = await productModel.countDocuments(query);
+      const products = await productModel
+        .find(query)
+        .sort({ startTime: -1 }) // Sort by most recent
+        .skip(skip)
+        .limit(limit)
+        .lean();
+
+      // Fetch bids for each product
+      const productIds = products.map((product) => product._id);
+      const bids = await bidModel
+        .find({ productId: { $in: productIds } })
+        .sort({ createdAt: -1 }) // Sort bids by most recent
+        .lean();
+
+      // Combine products with their bids
+      const productsWithBids = products.map((product) => ({
+        ...product,
+        bids: bids.filter((bid) => bid.productId.toString() === product._id.toString()),
+      }));
+
+      return {
+        products: productsWithBids,
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      throw new Error(`Error fetching seller products with bids: ${error.message}`);
     }
   },
 };

@@ -59,7 +59,6 @@ const buyers = Schema(
       type: String,
       default: status.ACTIVE,
     },
-  
   },
   { timestamps: true }
 );

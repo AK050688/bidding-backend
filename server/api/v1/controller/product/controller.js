@@ -24,6 +24,7 @@ const {
   deleteProduct,
   findProductsOfSeller,
   findSellerById,
+  findSellerByBuyerid,
   findAdmin,
   getFilteredProducts,
   getProductsByCategoryAndBrand
@@ -138,6 +139,7 @@ class ProductController {
       quantity: Joi.number().integer().min(1).optional(),
       startTime: Joi.date().iso().optional(),
       endTime: Joi.date().iso().optional(),
+      isSold: Joi.boolean().optional()
     });
 
     try {

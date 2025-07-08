@@ -3,9 +3,10 @@ import controller from "./controller.js";
 import auth from "../../../../helper/auth.js"
 
 export default Express.Router()
-    .post("/placeBid", auth.verifyToken,controller.placeBid)
-    .get("/getBidOnProduct/:productId", auth.verifyToken,controller.getBidOnProduct)
-    .get("/getBidOnProduct", auth.verifyToken,controller.getBidOnProduct)
+    .post("/placeBid", auth.verifyToken, controller.placeBid)
+    .get("/getBidOnProduct", auth.verifyToken, controller.getBidOnProduct)
+    .get("/getSellerProductsWithLiveBids", auth.verifyToken, controller.getSellerProductsWithLiveBids)
+    .get("/getSellerProductsWithEndedBids", auth.verifyToken, controller.getSellerProductsWithEndedBids)
 
 
 
@@ -13,4 +14,3 @@ export default Express.Router()
 
 
 
-    

@@ -57,6 +57,9 @@ const sellerServices = {
         return sendData
 
     },
+    findSellerByBuyerid:async (id) => {
+        return await sellerModel.findOne({ $and: [{buyerId: id }, { statusOfApproval: { $ne: statusOfApproval.REJECTED } }] }).populate({ path: "buyerId", select: "firstName lastName email mobileNumber addressLine city zip status userType" });
+    },
 
 }
 export default sellerServices;

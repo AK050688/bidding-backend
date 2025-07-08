@@ -6,14 +6,17 @@ import commonFunction from "../../../../helper/utils.js";
 import successResponse from "../../../../../assets/response.js";
 import { status } from "../../../../enums/status.js";
 import { userType } from "../../../../enums/userType.js";
-
+import sellerServices from "../../services/sellers.js";
+import productServices from "../../services/product.js";
+const { findSellerById, updateSellerById, findAllRequest, findSellerByBuyerid } = sellerServices;
 const {
   placeBid,
   checkProduct,
   findUserById,
-  findAdmin,
   checkPlacedBid,
   getBidsOnProduct,
+  getSellerProductsWithBids,
+  getSellerProductsWithEndBids
 } = bidServices;
 
 class bidController {
@@ -91,9 +94,21 @@ class bidController {
 
       const user = await findUserById(req.userId);
       if (!user) {
-        return res.json(new apiError.notFound(responseMessages.USER_NOT_FOUND));
+        return res.json(apiError.notFound(responseMessages.USER_NOT_FOUND));
       }
-
+        const product = await checkProduct(productId);
+      
+      if (!product) {
+         return res.json(apiError.notFound(responseMessages.PRODUCT_NOT_FOUND));
+      }
+ const currentTime = new Date();
+      if (
+        currentTime < product.startTime ||
+        currentTime > product.endTime ||
+        product.isSold
+      ) {
+         return res.json(apiError.notFound(responseMessages.BIDING_NOT_AVILABLE));
+      }
       const result = await getBidsOnProduct(productId, req.userId, {
         page,
         limit,
@@ -118,30 +133,105 @@ class bidController {
       return next(error);
     }
   }
-  async getSellerProductsWithBids(req, res, next) {
+  async getSellerProductsWithLiveBids(req, res, next) {
     const fields = Joi.object({
-      sellerId: Joi.string().hex().length(24).required(),
+      buyerId: Joi.string().required(),
       page: Joi.number().integer().min(1).default(1),
       limit: Joi.number().integer().min(1).max(100).default(10),
     });
 
     try {
-      const { error, value } = fields.validate({ ...req.body, ...req.query });
+      const { error, value } = fields.validate(req.query);
       if (error) {
         console.error(error.details);
         return res.json({ error: error.message });
       }
+      const { buyerId, page, limit } = value;
+      const buyer = await findUserById(req.userId)
+      if (!buyer) {
+        return res.json(apiError.notFound(responseMessages.USER_NOT_FOUND))
+      }
+      let seller = null
+      if (buyer.userType !== userType.ADMIN) {
 
-      const { sellerId, page, limit } = value;
-
-      // Verify requesting user
-      const user = await findUserById(req.userId);
-      if (!user) {
-        return res.json(new apiError.notFound(responseMessages.USER_NOT_FOUND));
+        // For non-admins, verify seller status and ownership
+        if (buyerId.toString() !== req.userId.toString()) {
+          
+          return res.json(apiError.unauthorized(responseMessages.CANT_SEE_PRODUCT))
+        }
+        const requestingSeller = await findSellerByBuyerid(buyerId);
+        if (!requestingSeller) {
+          return res.json(apiError.notFound(responseMessages.SELLER_NOT_FOUND))
+        }
+        if (buyerId.toString() !== requestingSeller.buyerId._id.toString()) {
+          return res.json(apiError.unauthorized(responseMessages.CANT_SEE_PRODUCT))
+        }
+        seller = requestingSeller._id
       }
 
-      const result = await productServices.getSellerProductsWithBids(
-        sellerId,
+      const result = await getSellerProductsWithBids(
+        seller,
+        req.userId,
+        { page, limit }
+      );
+
+      return res.json(
+        new successResponse(
+          {
+            products: result.products,
+            pagination: {
+              total: result.total,
+              page: result.page,
+              limit: result.limit,
+              totalPages: result.totalPages,
+            },
+          },
+          responseMessages.SELLER_PRODUCTS_WITH_BIDS_FETCHED
+        )
+      );
+    } catch (error) {
+      console.log("Error fetching seller products with bids:", error);
+      return next(error);
+    }
+  }
+  async getSellerProductsWithEndedBids(req, res, next) {
+    const fields = Joi.object({
+      buyerId: Joi.string().required(),
+      page: Joi.number().integer().min(1).default(1),
+      limit: Joi.number().integer().min(1).max(100).default(10),
+    });
+
+    try {
+      const { error, value } = fields.validate(req.query);
+      if (error) {
+        console.error(error.details);
+        return res.json({ error: error.message });
+      }
+      const { buyerId, page, limit } = value;
+      const buyer = await findUserById(req.userId)
+      if (!buyer) {
+        return res.json(apiError.notFound(responseMessages.USER_NOT_FOUND))
+      }
+      let seller = null
+      if (buyer.userType !== userType.ADMIN) {
+
+        // For non-admins, verify seller status and ownership
+        if (buyerId.toString() !== req.userId.toString()) {
+          
+          return res.json(apiError.unauthorized(responseMessages.CANT_SEE_PRODUCT))
+        }
+        const requestingSeller = await findSellerByBuyerid(buyerId);
+        if (!requestingSeller) {
+          return res.json(apiError.notFound(responseMessages.SELLER_NOT_FOUND))
+        }
+        if (buyerId.toString() !== requestingSeller.buyerId._id.toString()) {
+          return res.json(apiError.unauthorized(responseMessages.CANT_SEE_PRODUCT))
+        }
+        seller = requestingSeller._id
+      }
+
+      const result = await getSellerProductsWithEndBids(
+        seller,
         req.userId,
         { page, limit }
       );

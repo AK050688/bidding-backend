@@ -10,7 +10,7 @@ import sellerServices from "../../services/sellers.js";
 import bcrypt from "bcrypt";
 import Joi from "joi";
 const { updateUserById, findAdmin, paginate, dashboard, findUserById, findAdminv2 } = userServices;
-const { findSellerById, updateSellerById, findAllRequest } = sellerServices;
+const { findSellerById, updateSellerById, findAllRequest,findSellerByBuyerid } = sellerServices;
 class adminController {
   async adminLogin(req, res, next) {
     const fields = Joi.object({
@@ -205,7 +205,7 @@ class adminController {
 
   async requestApproval(req, res, next) {
     const fields = Joi.object({
-      sellerId: Joi.string().required()
+      buyerId: Joi.string().required()
         .required(),
       statusOfApproval: Joi.string()
         .valid(...Object.values(statusOfApproval))
@@ -214,7 +214,8 @@ class adminController {
 
     try {
       const validate = await fields.validateAsync(req.body);
-      const { sellerId, statusOfApproval } = validate
+     
+      const { buyerId, statusOfApproval } = validate
       const isAdmin = await findAdminv2(req.userId);
       if (!isAdmin) {
         return res.json(
@@ -222,7 +223,11 @@ class adminController {
         );
 
       }
-      const isSeller = await findSellerById(sellerId)
+       const buyer =  await findUserById(buyerId)
+      if(!buyer){
+        return res.json(apiError.notFound(responseMessages.USER_NOT_FOUND))
+      }
+      const isSeller = await findSellerByBuyerid(buyerId)
       if (!isSeller) {
          return res.json(
           apiError.badRequest(responseMessages.USER_NOT_FOUND)

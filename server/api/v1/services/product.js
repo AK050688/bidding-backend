@@ -76,11 +76,6 @@ export default {
     const deleteProduct = await productModel.findByIdAndDelete(productId);
     return deleteProduct;
   },
-  findSellerById: async (productId) => {
-    const deleteProduct = await sellerModel.findById({ _id: productId });
-    return deleteProduct;
-  },
-
   getFilteredProducts: async (filters) => {
     try {
       const {
@@ -140,7 +135,7 @@ export default {
       throw new Error(`Error fetching filtered products: ${error.message}`);
     }
   },
-    getProductsByCategoryAndBrand: async (filters) => {
+  getProductsByCategoryAndBrand: async (filters) => {
     try {
       const { categoryId, page = 1, limit = 10 } = filters;
 
