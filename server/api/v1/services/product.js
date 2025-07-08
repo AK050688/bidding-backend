@@ -80,4 +80,118 @@ export default {
     const deleteProduct = await sellerModel.findById({ _id: productId });
     return deleteProduct;
   },
+
+  getFilteredProducts: async (filters) => {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = "recentlyStarted",
+        search,
+        categoryId,
+      } = filters;
+
+      const query = {
+        $and: [
+          { startTime: { $lte: new Date() } },
+          { endTime: { $gte: new Date() } },
+          { isSold: false },
+        ],
+      };
+
+      // Add search by name
+      if (search) {
+        query.$and.push({ name: { $regex: search, $options: "i" } });
+      }
+
+      // Add category filter
+      if (categoryId) {
+        query.$and.push({ categoryId });
+      }
+
+      // Define sort options
+      const sortOptions = {
+        recentlyStarted: { startTime: -1 },
+        soonestToEnd: { endTime: 1 },
+        priceLowToHigh: { minBid: 1 },
+        priceHighToLow: { minBid: -1 },
+      };
+
+      const sort = sortOptions[sortBy] || sortOptions.recentlyStarted;
+
+      // Calculate pagination
+      const skip = (page - 1) * limit;
+      const total = await productModel.countDocuments(query);
+      const products = await productModel
+        .find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .lean();
+
+      return {
+        products,
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      throw new Error(`Error fetching filtered products: ${error.message}`);
+    }
+  },
+    getProductsByCategoryAndBrand: async (filters) => {
+    try {
+      const { categoryId, page = 1, limit = 10 } = filters;
+
+      // Validate category
+      const category = await categoryModel.findById(categoryId);
+      if (!category) {
+        throw new Error("Category not found");
+      }
+
+      const query = {
+        $and: [
+          { categoryId },
+          { startTime: { $lte: new Date() } },
+          { endTime: { $gte: new Date() } },
+          { isSold: false },
+        ],
+      };
+
+      // Aggregate to get one product per brandName
+      const pipeline = [
+        { $match: query },
+        {
+          $group: {
+            _id: "$brandName",
+            product: { $first: "$$ROOT" },
+          },
+        },
+        { $replaceRoot: { newRoot: "$product" } },
+        { $sort: { startTime: -1 } }, // Default sort by recently started
+        { $skip: (page - 1) * limit },
+        { $limit: Number(limit) },
+      ];
+
+      const products = await productModel.aggregate(pipeline).exec();
+      const total = await productModel.aggregate([
+        { $match: query },
+        { $group: { _id: "$brandName" } },
+        { $count: "total" },
+      ]).exec();
+
+      const totalCount = total.length > 0 ? total[0].total : 0;
+
+      return {
+        products,
+        total: totalCount,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(totalCount / limit),
+      };
+    } catch (error) {
+      throw new Error(`Error fetching products by category and brand: ${error.message}`);
+    }
+  },
 };

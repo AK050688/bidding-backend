@@ -12,7 +12,7 @@ import { conditionType } from "../../../../enums/conditionType.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import fs from "fs/promises"
+import fs from "fs/promises";
 const {
   findSeller,
   findSellerOrAdmin,
@@ -25,6 +25,8 @@ const {
   findProductsOfSeller,
   findSellerById,
   findAdmin,
+  getFilteredProducts,
+  getProductsByCategoryAndBrand
 } = productServices;
 
 class ProductController {
@@ -149,7 +151,6 @@ class ProductController {
         return res.json(
           apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
         );
-
       }
       const productId = req.params.productId;
       const isProduct = await checkProduct(productId);
@@ -226,11 +227,8 @@ class ProductController {
         );
       }
 
-
       if (req.files && req.files.productImage)
         value.productImage = productImages;
-
-
 
       const updatedProduct = await updateProduct(productId, value);
       return res.json(
@@ -263,17 +261,17 @@ class ProductController {
         return res.json(apiError.notFound(responseMessages.PRODUCT_NOT_FOUND));
       }
       const currentTime = new Date();
-      if (currentTime >= isProduct.startTime || isProduct.isSold) {   //cant not dele`te the product after the bidding is over as it will cause problem after some times.`
+      if (currentTime >= isProduct.startTime || isProduct.isSold) {
+        //cant not dele`te the product after the bidding is over as it will cause problem after some times.`
         return res.json(
-          apiError.badRequest(responseMessages.PRODUCT_CANT_DELETED_WHILE_BIDDING)
+          apiError.badRequest(
+            responseMessages.PRODUCT_CANT_DELETED_WHILE_BIDDING
+          )
         );
       }
       const __filename = fileURLToPath(import.meta.url);
       const __dirname = dirname(__filename);
-      if (
-        isProduct.productImage &&
-        isProduct.productImage.length > 0
-      ) {
+      if (isProduct.productImage && isProduct.productImage.length > 0) {
         const deletionErrors = [];
         for (const imagePath of isProduct.productImage) {
           const fullPath = path.join(
@@ -332,19 +330,167 @@ class ProductController {
           return res.json(apiError.notFound(responseMessages.SELLER_NOT_FOUND));
         }
         if (sellerDetails.statusOfApproval !== statusOfApproval.ACCEPTED) {
-          return res.json(
-            apiError.forbidden(responseMessages.NOT_FOUND)
-          );
+          return res.json(apiError.forbidden(responseMessages.NOT_FOUND));
         }
       }
       const products = await findProductsOfSeller(value.buyerId);
       return res.json(new successResponse(products, responseMessages.SUCCESS));
-
     } catch (error) {
       console.log("Error updating product:", error);
       return next(error);
     }
   }
+
+  async getProducts(req, res, next) {
+    const fields = Joi.object({
+      page: Joi.number().integer().min(1).default(1),
+      limit: Joi.number().integer().min(1).max(100).default(10),
+      sortBy: Joi.string()
+        .valid(
+          "recentlyStarted",
+          "soonestToEnd",
+          "priceLowToHigh",
+          "priceHighToLow"
+        )
+        .default("recentlyStarted"),
+      search: Joi.string().max(100).optional().allow(""),
+      categoryId: Joi.string().hex().length(24).optional(),
+    });
+
+    try {
+      const { error, value } = fields.validate(req.query);
+      if (error) {
+        console.error(error.details);
+        return res.json({ error: error.message });
+      }
+
+      // const user = await findUserById(req.userId);
+      // if (!user) {
+      //   return res.json(apiError.notFound(responseMessages.USER_NOT_FOUND));
+      // }
+
+      if (value.categoryId) {
+        const category = await checkCategory(value.categoryId);
+        if (!category) {
+          return res.json(
+            apiError.badRequest(responseMessages.CATEGORY_NOT_FOUND)
+          );
+        }
+      }
+
+      const result = await getFilteredProducts(value);
+
+      return res.json(
+        new successResponse(
+          {
+            products: result.products,
+            pagination: {
+              total: result.total,
+              page: result.page,
+              limit: result.limit,
+              totalPages: result.totalPages,
+            },
+          },
+          responseMessages.PRODUCTS_FETCHED
+        )
+      );
+    } catch (error) {
+      console.log("Error fetching products:", error);
+      return next(error);
+    }
+  }
+
+  async getProductsByCategoryAndBrand(req, res, next) {
+    const fields = Joi.object({
+      categoryId: Joi.string().hex().length(24).required(),
+      page: Joi.number().integer().min(1).default(1),
+      limit: Joi.number().integer().min(1).max(100).default(10),
+    });
+
+    try {
+      const { error, value } = fields.validate(req.query);
+      if (error) {
+        console.error(error.details);
+        return res.json({ error: error.message });
+      }
+
+      // const user = await findUserById(req.userId);
+      // if (!user) {
+      //   return res.json(new apiError.notFound(responseMessages.USER_NOT_FOUND));
+      // }
+
+      const category = await checkCategory(value.categoryId);
+      if (!category) {
+        return res.json(apiError.badRequest(responseMessages.CATEGORY_NOT_FOUND));
+      }
+
+      const result = await getProductsByCategoryAndBrand(value);
+
+      return res.json(
+        new successResponse({
+          products: result.products,
+          pagination: {
+            total: result.total,
+            page: result.page,
+            limit: result.limit,
+            totalPages: result.totalPages,
+          },
+        }, responseMessages.PRODUCTS_BY_CATEGORY_AND_BRAND_FETCHED)
+      );
+    } catch (error) {
+      console.log("Error fetching products by category and brand:", error);
+      return next(
+        error
+      );
+    }
+  
 }
 
+async getSellerProductBids(req, res, next) {
+    const fields = Joi.object({
+      productId: Joi.string().hex().length(24).required(),
+      page: Joi.number().integer().min(1).default(1),
+      limit: Joi.number().integer().min(1).max(100).default(10),
+    });
+
+    try {
+      const { error, value } = fields.validate({ ...req.body, ...req.query });
+      if (error) {
+        console.error(error.details);
+        return res.json({ error: error.message });
+      }
+
+      const { productId, page, limit } = value;
+
+      // Verify requesting user
+      const user = await findUserById(req.userId);
+      if (!user) {
+        return res.json(new apiError.notFound(responseMessages.USER_NOT_FOUND));
+      }
+
+      const result = await bidServices.getSellerProductBids(productId, req.userId, { page, limit });
+
+      return res.json(
+        new successResponse(
+          {
+            bids: result.bids,
+            pagination: {
+              total: result.total,
+              page: result.page,
+              limit: result.limit,
+              totalPages: result.totalPages,
+            },
+          },
+          responseMessages.SELLER_BIDS_FETCHED
+        )
+      );
+    } catch (error) {
+      console.log("Error fetching seller bids:", error);
+      return next(
+        error
+      );
+    }
+  }
+
+}
 export default new ProductController();
