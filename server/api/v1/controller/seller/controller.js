@@ -40,9 +40,9 @@ export class sellerController {
 
             const user = await findUserById(req.userId);
             // console.log(req.userId);
-            
+
             if (!user) {
-                return res.json(apiError.notFound(responseMessages.USER_NOT_FOUND));
+                throw apiError.notFound(responseMessages.USER_NOT_FOUND)
             }
             validatedBody.buyerId = req.userId;
             const checkAlreadyRequested = await checkForRequest(email, orgnizationPhone, gstNumber);

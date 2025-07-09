@@ -47,6 +47,10 @@ const buyers = Schema(
     otpExpireTime: {
       type: Date,
     },
+    isSeller: {
+      type: Boolean,
+      default: false,
+    },
     isVerified: {
       type: Boolean,
       default: false,

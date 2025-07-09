@@ -60,19 +60,14 @@ export class userController {
 
       if (user) {
         if (user.status === "BLOCKED") {
-          return res.json(apiError.forbidden(responseMessages.UNAUTHORIZED));
+          throw apiError.forbidden(responseMessages.UNAUTHORIZED)
         } else if (user.mobileNumber === mobileNumber) {
-          return res.json(
-            apiError.conflict(responseMessages.MOBILE_ALREADY_EXIST)
-          );
+          throw apiError.conflict(responseMessages.MOBILE_ALREADY_EXIST)
         } else if (user.email === email) {
-          return res.json(
-            apiError.conflict(responseMessages.EMAIL_ALREADY_EXIST)
-          );
+          throw apiError.conflict(responseMessages.EMAIL_ALREADY_EXIST)
         } else {
-          return res.json(
-            apiError.conflict(responseMessages.USER_ALREADY_EXIST)
-          );
+          throw apiError.conflict(responseMessages.USER_ALREADY_EXIST)
+
         }
       }
       // await commonFunction.sendMail(email, validatedBody.otp);
@@ -121,7 +116,7 @@ export class userController {
         { new: true }
       );
 
-      return res.json(new successResponse(otp, responseMessages.OTP_SEND));
+      return res.json(new successResponse(responseMessages.OTP_SEND));
     } catch (error) {
       console.log("Error", error);
       return next(error);
@@ -362,7 +357,7 @@ export class userController {
           if (conflict.mobileNumber === mobileNumber) {
             throw apiError.conflict(
               responseMessages.MOBILE_ALREADY_EXIST ||
-                "Mobile number already exists"
+              "Mobile number already exists"
             );
           }
         }

@@ -69,20 +69,20 @@ class ProductController {
       } = value;
       const user = await findUserById(req.userId);
       if (!user) {
-        return res.json(new apiError.notFound(responseMessages.USER_NOT_FOUND));
+         throw apiError.notFound(responseMessages.USER_NOT_FOUND)
       }
       if (![userType.ADMIN, userType.BUYER].includes(user.userType)) {
-        return res.json(apiError.forbidden(responseMessages.UNAUTHORIZED));
+         throw apiError.forbidden(responseMessages.UNAUTHORIZED)
       }
       if (user.userType === userType.SELLER) {
         const sellerDetails = await findSeller(req.userId);
         if (!sellerDetails) {
-          return res.json(apiError.notFound(responseMessages.SELLER_NOT_FOUND));
+        throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
         }
         if (sellerDetails.statusOfApproval !== statusOfApproval.ACCEPTED) {
-          return res.json(
-            apiError.forbidden(responseMessages.NOT_ALLOWED_TO_CREATE_PRODUCT)
-          );
+   
+           throw  apiError.forbidden(responseMessages.NOT_ALLOWED_TO_CREATE_PRODUCT)
+          
         }
       }
       const category = await checkCategory(categoryId);
