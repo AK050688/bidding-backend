@@ -35,6 +35,11 @@ const supports = Schema(
             enum: [...Object.values(supportStatus)],
             default: supportStatus.PENDING,
         },
+        image: {
+            type: String, 
+            default: null 
+        },
+        
     },
     { timestamps: true }
 );

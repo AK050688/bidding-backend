@@ -19,6 +19,7 @@ export class supportController {
             subject: Joi.string().required(),
             mobileNumber: Joi.string().required(),
             description: Joi.string().required(),
+   
 
         });
         try {
@@ -39,7 +40,6 @@ export class supportController {
                     return res.json(apiError.forbidden(responseMessages.SUPPORT_NOT_ALLOWED))
                 }
             }
-
             // await commonFunction.sendMail(email, validatedBody.otp);
             const result = await createSupport(validatedBody);
             if (result.supportStatus.PENDING)

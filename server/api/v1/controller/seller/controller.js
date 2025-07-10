@@ -8,7 +8,9 @@ import successResponse from "../../../../../assets/response.js";
 import { status } from "../../../../enums/status.js";
 import { userType } from "../../../../enums/userType.js";
 import sellerServices from "../../../v1/services/sellers.js";
-const { checkForRequest, createRequest, findUserById } = sellerServices
+import user from "../../../../models/user.js";
+const { checkForRequest, createRequest, findUserById, findAllRequest } = sellerServices
+const { findAdminv2 } = userServices;
 export class sellerController {
     async requestForSeller(req, res, next) {
         const schema = Joi.object({
@@ -22,6 +24,8 @@ export class sellerController {
             orgnizationWebsite: Joi.string().optional(),
             gstNumber: Joi.string().lowercase().optional(),
             remark: Joi.string().optional(),
+            gstDoc_Image: Joi.string(),
+
         });
         try {
             const validatedBody = await schema.validateAsync(req.body);
@@ -89,7 +93,39 @@ export class sellerController {
             console.log("Error", error);
             return next(error);
         }
-    }
+    };
+    async getAllRequestByUser(req, res, next) {
+        const fields = Joi.object({
+            statusOfApproval: Joi.string()
+                .valid(...Object.values(statusOfApproval))
+                .required(),
+        })
+
+        try {
+            const validate = await fields.validateAsync(req.body);
+            const { statusOfApproval } = validate
+            const isAdmin = await findAdminv2(req.userId);
+            if (!isAdmin) {
+                return res.json(
+                    apiError.unauthorized(responseMessages.USER_NOT_FOUND)
+                );
+            }
+            const updateStatus = await findAllRequest({ statusOfApproval: statusOfApproval })
+            return res.json(new successResponse(updateStatus, responseMessages.SUCCESS))
+        } catch (error) {
+            console.log("error..", error);
+            return next(error)
+
+        }
+    };
+
+
+
+
 }
+
+
+
+
 
 export default new sellerController();

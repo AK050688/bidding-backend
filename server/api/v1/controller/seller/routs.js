@@ -4,6 +4,9 @@ import auth from "../../../../helper/auth.js"
 
 export default Express.Router()
 .post("/requestForSeller",auth.verifyToken,controller.requestForSeller)
+ .get("/getAllRequestByUser", auth.verifyToken, controller.getAllRequestByUser)
+ 
+
 
 
 

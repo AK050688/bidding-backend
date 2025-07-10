@@ -18,8 +18,10 @@ export default {
 	LOGIN: 'Login successfully.',
 	OTP_VERIFY: 'OTP verified successfully.',
 	USER_ALREADY_EXIST: 'User already exist.',
+	
 	REQUEST_ALREADY_EXIST: 'Request already exist.',
 	USER_NOT_FOUND: 'User not found.',
+
 	CANT_SEE_PRODUCT: 'Not allowed to see the product as seller can only see there own products.',
 	PROFILE_UPDATED: 'Profile updated successfully.',
 	USER_EXISTS: 'User exists found successfully',
