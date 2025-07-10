@@ -49,11 +49,9 @@ export class sellerController {
 
             if (checkAlreadyRequested) {
                 if (checkAlreadyRequested.status === "PENDING") {
-                    return res.json(apiError.forbidden(responseMessages.REQUEST_ALREADY_PENDING));
+                    throw apiError.forbidden(responseMessages.REQUEST_ALREADY_PENDING)
                 } else if (checkAlreadyRequested.orgnizationPhone === orgnizationPhone) {
-                    return res.json(
-                        apiError.conflict(responseMessages.MOBILE_ALREADY_EXIST)
-                    );
+                    throw apiError.conflict(responseMessages.MOBILE_ALREADY_EXIST)
                 }
                 else if (checkAlreadyRequested.status === "REJECTED") {
                     const result = await createRequest(validatedBody);
@@ -62,22 +60,17 @@ export class sellerController {
                     );
                 }
                 else if (checkAlreadyRequested.status === "BLOCK") {
-                    return res.json(
-                        apiError.conflict(responseMessages.REQUEST_BLOCKED)
-                    );
+                    throw apiError.conflict(responseMessages.REQUEST_BLOCKED)
+
                 }
                 else if (checkAlreadyRequested.email === email) {
-                    return res.json(
-                        apiError.conflict(responseMessages.EMAIL_ALREADY_EXIST)
-                    );
+                    throw apiError.conflict(responseMessages.EMAIL_ALREADY_EXIST)
+
                 } else if (checkAlreadyRequested.gstNumber === gstNumber) {
-                    return res.json(
-                        apiError.conflict(responseMessages.GST_ALREADY_EXIST)
-                    );
+                    throw apiError.conflict(responseMessages.GST_ALREADY_EXIST)
+
                 } else {
-                    return res.json(
-                        apiError.conflict(responseMessages.REQUEST_ALREADY_EXIST)
-                    );
+                    throw apiError.conflict(responseMessages.REQUEST_ALREADY_EXIST)
                 }
             }
             // await commonFunction.sendMail(email, validatedBody.otp);
