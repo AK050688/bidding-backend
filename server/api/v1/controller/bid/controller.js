@@ -57,17 +57,20 @@ class bidController {
           apiError.notFound(responseMessages.BIDING_NOT_AVILABLE)
         );
       }
-      if (bidData.bidAmount < isProduct.minBid) {
+      if (bidAmount < isProduct.minBid) {
         return res.json(apiError.notFound(responseMessages.BID_ALREADY_PLACED));
       }
       const isAlreadyBid = checkPlacedBid(req.userId, productId);
-      if (isAlreadyBid) {
+      if (isAlreadyBid>0) {
         return res.json(
           apiError.badRequest(responseMessages.BIDING_NOT_AVILABLE)
         );
       }
-      const buyerId = req.userId;
-      const bidData = { productId, bidAmount, buyerId };
+       const bidData = {
+      productId,
+      bidAmount,
+      buyerId: req.userId,
+    };
       const newBid = await placeBid(bidData);
 
       return res.json(new successResponse(newBid, responseMessages.BID_PLACED));

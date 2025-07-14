@@ -12,6 +12,7 @@ export default Express.Router()
 .get("/getProfile",auth.verifyToken,controller.getProfile)
 .put("/userEditProfile",auth.verifyToken,controller.userEditProfile) 
 .put("/reSetPassword",auth.verifyToken,controller.reSetPassword)
+.get("/getBuyerBidCount",auth.verifyToken,controller.getBuyerBidCount)
 
 
 

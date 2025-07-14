@@ -11,8 +11,10 @@ export default Express.Router()
     .put("/requestApproval", auth.verifyToken, controller.requestApproval)
     .get("/getAllRequest", auth.verifyToken, controller.getAllRequest)
     .get("/getSpecificRequest/:requestId", auth.verifyToken, controller.getSpecificRequest)
-    
-
+    .get('/userCountData',auth.verifyToken,controller.userCountData)
+    .delete('/adminDeleteUser',auth.verifyToken,controller.adminDeleteUser)
+    .put('/markSellerStatus',auth.verifyToken,controller.markSellerStatus);
+   
 
 
 

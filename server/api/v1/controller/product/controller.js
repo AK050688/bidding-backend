@@ -1,4 +1,6 @@
 import productServices from "../../../v1/services/product.js";
+import mongoose from "mongoose";
+import bidServices from "../../../v1/services/bid.js"
 import apiError from "../../../../helper/apiError.js";
 import responseMessages from "../../../../../assets/responseMessages.js";
 import Joi from "joi";
@@ -13,6 +15,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import fs from "fs/promises";
+import { statusOfApproval } from "../../../../enums/statusOfApproval.js";
 const {
   findSeller,
   findSellerOrAdmin,
@@ -28,8 +31,10 @@ const {
   findAdmin,
   getFilteredProducts,
   getProductsByCategoryAndBrand,
-  findSellerByBuyerId
+  findSellerByBuyerId,
+  getHighestBidForProduct
 } = productServices;
+const { getSellerProductBids, findPtoductaggration } = bidServices
 
 class ProductController {
   async createProduct(req, res, next) {
@@ -69,6 +74,8 @@ class ProductController {
         endTime,
       } = value;
       const user = await findUserById(req.userId);
+      console.log(user), ">>>>>>>>>>>>>>>>>>>>>>>>>>";
+
       if (!user) {
         throw apiError.notFound(responseMessages.USER_NOT_FOUND)
       }
@@ -77,6 +84,8 @@ class ProductController {
       }
       if (user.userType === userType.BUYER) {
         const sellerDetails = await findSellerByBuyerId(req.userId);
+        console.log(sellerDetails, "=====================");
+
         if (!sellerDetails) {
           throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
         }
@@ -90,6 +99,8 @@ class ProductController {
         throw apiError.badRequest(responseMessages.CATEGORY_NOT_FOUND)
       }
       let productImages = [];
+
+
       if (req.files && req.files.productImage) {
         productImages = req.files.productImage.map(
           (file) => `/${file.filename}`
@@ -249,6 +260,8 @@ class ProductController {
         throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
       }
       const isProduct = await checkProduct(value.productId);
+      console.log(isProduct, "===================================>");
+
       if (!isProduct) {
         throw apiError.notFound(responseMessages.PRODUCT_NOT_FOUND)
       }
@@ -356,12 +369,6 @@ class ProductController {
         console.error(error.details);
         return res.status(400).json({ responseMessages: error.message });
       }
-
-      // const user = await findUserById(req.userId);
-      // if (!user) {
-      //   return res.json(apiError.notFound(responseMessages.USER_NOT_FOUND));
-      // }
-
       if (value.categoryId) {
         const category = await checkCategory(value.categoryId);
         if (!category) {
@@ -456,11 +463,13 @@ class ProductController {
 
       // Verify requesting user
       const user = await findUserById(req.userId);
+
       if (!user) {
         throw apiError.notFound(responseMessages.USER_NOT_FOUND)
       }
 
-      const result = await bidServices.getSellerProductBids(productId, req.userId, { page, limit });
+      const result = await getSellerProductBids(productId, req.userId, { page, limit });
+      console.log(result, "<<<<<<<<<<<<<<<<<<");
 
       return res.json(
         new successResponse(
@@ -483,6 +492,153 @@ class ProductController {
       );
     }
   }
+  async getBidCategoriesByBuyer(req, res, next) {
+    try {
+      const { buyerId } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(buyerId)) {
+        throw apiError.badRequest(responseMessages.INVALID_USER);
+      }
+
+      const categories = await findPtoductaggration(buyerId)
+
+      return res.json(new successResponse(categories, "Categories bid on by buyer"));
+    } catch (error) {
+      console.log("Error:", error);
+      return next(error);
+    }
+  }
+  // async chooseWinner(req, res, next) {
+  //   const schema = Joi.object({
+  //     productId: Joi.string().hex().length(24).required(),
+  //   });
+  //   try {
+  //     const { error, value } = schema.validate(req.params);
+  //     if (error) {
+  //       return res.status(400).json({ error: error.message });
+  //     }
+  //     const { productId } = value;
+  //     const user = await findUserById(req.userId);
+
+
+  //     if (!user) {
+  //       throw apiError.notFound(responseMessages.USER_NOT_FOUND);
+  //     }
+  //     const product = await checkProduct(productId);
+
+
+  //     if (!product) {
+  //       throw apiError.notFound(responseMessages.PRODUCT_NOT_FOUND);
+  //     }
+
+  //     if (product.isSold) {
+  //       throw apiError.badRequest(responseMessages.PRODUCT_ALREADY_SOLD);
+  //     }
+
+
+  //     const isAuthorized =
+  //       user.userType === userType.ADMIN ||
+  //       String(product.sellerId) === String(req.userId);
+
+  //     if (!isAuthorized) {
+  //       throw apiError.forbidden(responseMessages.UNAUTHORIZED);
+  //     }
+  //     const topBid = await getHighestBidForProduct(productId);
+  //     if (!topBid) {
+  //       throw apiError.notFound("No bids placed for this product");
+  //     }
+
+
+  //     // Update product with winnerId and isSold: true
+  //     const updatedProduct = await updateProduct(productId, {
+  //       winnerId: topBid.buyerId,
+  //       isSold: true,
+  //     });
+  //     return res.json(
+  //       new successResponse(updatedProduct, "Winner selected successfully")
+  //     );
+  //   } catch (error) {
+  //     console.log("Error choosing winner:", error);
+  //     return next(error);
+  //   }
+  // }
+  async chooseWinner(req, res, next) {
+    const schema = Joi.object({
+      productId: Joi.string().hex().length(24).required(),
+    });
+
+    try {
+      const { error, value } = schema.validate(req.params);
+      if (error) {
+        return res.status(400).json({ error: error.message });
+      }
+
+      const { productId } = value;
+
+      // Find the product
+      const product = await checkProduct(productId);
+      if (!product) {
+        throw apiError.notFound(responseMessages.PRODUCT_NOT_FOUND);
+      }
+
+      if (product.isSold) {
+        throw apiError.badRequest("Product is already sold");
+      }
+
+      const topBid = await getHighestBidForProduct(productId);
+      if (!topBid) {
+        throw apiError.notFound("No bids placed on this product");
+      }
+
+     
+      await updateProduct(productId, {
+        winnerId: topBid.buyerId,
+        isSold: true,
+      });
+
+    
+      return res.json(
+        new successResponse(
+          {
+            bidId: topBid._id,
+            buyerId: topBid.buyerId,
+            productId: productId,
+            winnerId: topBid.buyerId,
+            isSold: true,
+          },
+          "Winner has been selected successfully"
+        )
+      );
+    } catch (error) {
+      console.log("Error choosing winner:", error);
+      return next(error);
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }
+
+
 export default new ProductController();

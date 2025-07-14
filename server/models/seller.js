@@ -50,11 +50,20 @@ const sellers = new Schema({
      gstDoc_Image: {
       type: String, 
     },
-    aadharI_mage: {
+    aadhar_Image: {
       type: String,
     },
     pan_Image: {
       type: String,
     },
 }, { timestamps: true });
+
 export default model("sellers", sellers);
+
+
+
+
+
+
+
+
