@@ -24,6 +24,13 @@ export default {
     });
     // const seller = await sellerModel.findOne({ $and: [{ _id: id }, { statusOfApproval: statusOfApproval.ACCEPTED }] });
   },
+  findSellerByBuyerId: async (id) => {
+    // const seller = await sellerModel.findOne({ _id: id, $or: [{ userType: userType.ADMIN }, { $and: [{ _id: id }, { statusOfApproval: statusOfApproval.ACCEPTED }] }] });
+    return await sellerModel.findOne({
+      $and: [{ buyerId: id }, { statusOfApproval: statusOfApproval.ACCEPTED }],
+    });
+    // const seller = await sellerModel.findOne({ $and: [{ _id: id }, { statusOfApproval: statusOfApproval.ACCEPTED }] });
+  },
   findSellerOrAdmin: async (id) => {
     try {
       const admin = await userModel.findOne({

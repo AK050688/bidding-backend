@@ -36,10 +36,11 @@ export class categoryController {
       const user = await findUserById(req.userId)
 
       if (!user) {
-        return res.status(404).json(new successResponse(responseMessages.USER_NOT_FOUND));
+        throw apiError.notFound(responseMessages.USER_NOT_FOUND)
+
       }
       if (![userType.ADMIN, userType.BUYER].includes(user.userType)) {
-        return res.json(apiError.forbidden(responseMessages.UNAUTHORIZED));
+        throw apiError.forbidden(responseMessages.UNAUTHORIZED)
       }
       if (user.userType == userType.SELLER) {
         const sellerDetails = await findSeller(req.userId);
@@ -52,7 +53,8 @@ export class categoryController {
         categoryName: { $regex: `^${categoryName}$`, $options: 'i' },
       });
       if (existingCategory) {
-        return res.json(apiError.conflict(responseMessages.CATEGORY_ALREADY_EXISTS));
+        throw apiError.conflict(responseMessages.CATEGORY_ALREADY_EXISTS)
+
       }
       const obj = {
         categoryName: categoryName,
@@ -80,11 +82,11 @@ export class categoryController {
       const adminDetails = await findAdmin(req.userId);
 
       if (!adminDetails) {
-        return res.json(apiError.notFound(responseMessages.ADMIN_NOT_FOUND));
+        throw apiError.notFound(responseMessages.ADMIN_NOT_FOUND)
       }
       const categoryResult = await findCategory({ _id: categoryId });
       if (!categoryResult) {
-        return res.json(apiError.notFound(responseMessages.CATEGORY_NOT_FOUND));
+        throw apiError.notFound(responseMessages.CATEGORY_NOT_FOUND)
       }
       const data = { categoryName, description };
       if (data) {
@@ -93,7 +95,7 @@ export class categoryController {
             categoryName: { $regex: `^${categoryName}$`, $options: 'i' },
           });
           if (iscategoryName) {
-            return res.json(apiError.conflict(responseMessages.CATEGORY_ALREADY_EXISTS));
+            throw apiError.conflict(responseMessages.CATEGORY_ALREADY_EXISTS)
           }
         }
         const updatedCategory = await updateCategory(
@@ -126,7 +128,7 @@ export class categoryController {
       const adminDetails = await findAdmin(req.userId);
 
       if (!adminDetails) {
-        return res.json(apiError.notFound(responseMessages.ADMIN_NOT_FOUND));
+        throw apiError.notFound(responseMessages.ADMIN_NOT_FOUND)
       }
       const categoryResult = await findCategory({ _id: categoryId });
       if (!categoryResult) {
@@ -137,11 +139,11 @@ export class categoryController {
       console.log(findProductRelatedCategory);
 
       if (findProductRelatedCategory.lengt >= 1) {
-        return res.json(apiError.conflict(responseMessages.CATEGORY_HAS_PRODUCTS))
+        throw apiError.conflict(responseMessages.CATEGORY_HAS_PRODUCTS)
       }
       const result = await deleteCategory({ _id: categoryId });
       if (!result) {
-        return res.json(apiError.badRequest(responseMessages.CATEGORY_NOT_DELETE))
+        throw apiError.badRequest(responseMessages.CATEGORY_NOT_DELETE)
       }
       return res.json(
         new successResponse(result, responseMessages.CATEGORY_DELETE)
@@ -159,7 +161,8 @@ export class categoryController {
       // }
       const categoryResult = await findAllCategory();
       if (!categoryResult || categoryResult.length == 0) {
-        return res.json(apiError.notFound(responseMessages.CATEGORY_NOT_FOUND))
+        throw apiError.notFound(responseMessages.CATEGORY_NOT_FOUND)
+
       }
       return res.json(
         new successResponse(categoryResult, responseMessages.CATEGORY_FOUND)

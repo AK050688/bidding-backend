@@ -27,7 +27,8 @@ const {
   findSellerByBuyerid,
   findAdmin,
   getFilteredProducts,
-  getProductsByCategoryAndBrand
+  getProductsByCategoryAndBrand,
+  findSellerByBuyerId
 } = productServices;
 
 class ProductController {
@@ -69,27 +70,24 @@ class ProductController {
       } = value;
       const user = await findUserById(req.userId);
       if (!user) {
-         throw apiError.notFound(responseMessages.USER_NOT_FOUND)
+        throw apiError.notFound(responseMessages.USER_NOT_FOUND)
       }
       if (![userType.ADMIN, userType.BUYER].includes(user.userType)) {
-         throw apiError.forbidden(responseMessages.UNAUTHORIZED)
+        throw apiError.forbidden(responseMessages.UNAUTHORIZED)
       }
-      if (user.userType === userType.SELLER) {
-        const sellerDetails = await findSeller(req.userId);
+      if (user.userType === userType.BUYER) {
+        const sellerDetails = await findSellerByBuyerId(req.userId);
         if (!sellerDetails) {
-        throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
+          throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
         }
         if (sellerDetails.statusOfApproval !== statusOfApproval.ACCEPTED) {
-   
-           throw  apiError.forbidden(responseMessages.NOT_ALLOWED_TO_CREATE_PRODUCT)
-          
+          throw apiError.forbidden(responseMessages.NOT_ALLOWED_TO_CREATE_PRODUCT)
+
         }
       }
       const category = await checkCategory(categoryId);
       if (!category) {
-        return res.json(
-          apiError.badRequest(responseMessages.CATEGORY_NOT_FOUND)
-        );
+        throw apiError.badRequest(responseMessages.CATEGORY_NOT_FOUND)
       }
       let productImages = [];
       if (req.files && req.files.productImage) {
@@ -150,46 +148,40 @@ class ProductController {
       }
       const isAdmin = await findAdmin(req.userId);
       if (!isAdmin) {
-        return res.json(
-          apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
-        );
+        throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
       }
       const productId = req.params.productId;
       const isProduct = await checkProduct(productId);
       if (!isProduct) {
-        return res.json(apiError.notFound(responseMessages.PRODUCT_NOT_FOUND));
+        throw apiError.notFound(responseMessages.PRODUCT_NOT_FOUND)
       }
-
       const currentTime = new Date();
       if (currentTime >= isProduct.startTime || isProduct.isSold) {
-        return res.json(
-          apiError.badRequest(responseMessages.BID_OVER_OR_SOLD_OR_STARTED)
-        );
+        throw apiError.badRequest(responseMessages.BID_OVER_OR_SOLD_OR_STARTED)
       }
 
       if (value.categoryId) {
         const category = await checkCategory(value.categoryId);
         if (!category) {
-          return res.json(
-            apiError.badRequest(responseMessages.CATEGORY_NOT_FOUND)
-          );
+          throw apiError.badRequest(responseMessages.CATEGORY_NOT_FOUND)
+
         }
       }
 
       const user = await findUserById(req.userId);
       if (!user) {
-        return res.json(new apiError.notFound(responseMessages.USER_NOT_FOUND));
+        throw apiError.notFound(responseMessages.USER_NOT_FOUND)
       }
 
       const sellerOrAdmin = await findSellerOrAdmin(req.userId);
       if (!sellerOrAdmin) {
-        return res.json(apiError.forbidden(responseMessages.UNAUTHORIZED));
+        throw apiError.forbidden(responseMessages.UNAUTHORIZED)
       }
       if (
         sellerOrAdmin.userType !== userType.ADMIN &&
         isProduct.sellerId !== req.userId
       ) {
-        return res.json(apiError.forbidden(responseMessages.PRODUCT_NOT_YOURS));
+        throw apiError.forbidden(responseMessages.PRODUCT_NOT_YOURS)
       }
       const __filename = fileURLToPath(import.meta.url);
       const __dirname = dirname(__filename);
@@ -254,22 +246,20 @@ class ProductController {
       }
       const isAdmin = await findAdmin(req.userId);
       if (!isAdmin) {
-        return res.json(
-          apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
-        );
+        throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
       }
       const isProduct = await checkProduct(value.productId);
       if (!isProduct) {
-        return res.json(apiError.notFound(responseMessages.PRODUCT_NOT_FOUND));
+        throw apiError.notFound(responseMessages.PRODUCT_NOT_FOUND)
       }
       const currentTime = new Date();
       if (currentTime >= isProduct.startTime || isProduct.isSold) {
         //cant not dele`te the product after the bidding is over as it will cause problem after some times.`
-        return res.json(
-          apiError.badRequest(
-            responseMessages.PRODUCT_CANT_DELETED_WHILE_BIDDING
-          )
-        );
+        throw apiError.badRequest(
+          responseMessages.PRODUCT_CANT_DELETED_WHILE_BIDDING
+        )
+
+
       }
       const __filename = fileURLToPath(import.meta.url);
       const __dirname = dirname(__filename);
@@ -321,18 +311,19 @@ class ProductController {
       }
       const user = await findSellerOrAdmin(value.buyerId);
       if (!user) {
-        return res.json(apiError.notFound(responseMessages.SELLER_NOT_FOUND));
+        throw apiError.notFound(responseMessages.SELLER_NOT_FOUND)
+
       }
       if (![userType.ADMIN, userType.BUYER].includes(user.userType)) {
-        return res.json(apiError.forbidden(responseMessages.UNAUTHORIZED));
+        throw apiError.forbidden(responseMessages.UNAUTHORIZED)
       }
       if (user.userType === userType.SELLER) {
         const sellerDetails = await findSeller(value.buyerId);
         if (!sellerDetails) {
-          return res.json(apiError.notFound(responseMessages.SELLER_NOT_FOUND));
+          throw apiError.notFound(responseMessages.SELLER_NOT_FOUND)
         }
         if (sellerDetails.statusOfApproval !== statusOfApproval.ACCEPTED) {
-          return res.json(apiError.forbidden(responseMessages.NOT_FOUND));
+          throw apiError.forbidden(responseMessages.NOT_FOUND)
         }
       }
       const products = await findProductsOfSeller(value.buyerId);
@@ -363,7 +354,7 @@ class ProductController {
       const { error, value } = fields.validate(req.query);
       if (error) {
         console.error(error.details);
-        return res.json({ error: error.message });
+        return res.status(400).json({ responseMessages: error.message });
       }
 
       // const user = await findUserById(req.userId);
@@ -374,9 +365,8 @@ class ProductController {
       if (value.categoryId) {
         const category = await checkCategory(value.categoryId);
         if (!category) {
-          return res.json(
-            apiError.badRequest(responseMessages.CATEGORY_NOT_FOUND)
-          );
+          throw apiError.badRequest(responseMessages.CATEGORY_NOT_FOUND)
+
         }
       }
 
@@ -423,7 +413,7 @@ class ProductController {
 
       const category = await checkCategory(value.categoryId);
       if (!category) {
-        return res.json(apiError.badRequest(responseMessages.CATEGORY_NOT_FOUND));
+        throw apiError.badRequest(responseMessages.CATEGORY_NOT_FOUND)
       }
 
       const result = await getProductsByCategoryAndBrand(value);
@@ -445,10 +435,10 @@ class ProductController {
         error
       );
     }
-  
-}
 
-async getSellerProductBids(req, res, next) {
+  }
+
+  async getSellerProductBids(req, res, next) {
     const fields = Joi.object({
       productId: Joi.string().hex().length(24).required(),
       page: Joi.number().integer().min(1).default(1),
@@ -467,7 +457,7 @@ async getSellerProductBids(req, res, next) {
       // Verify requesting user
       const user = await findUserById(req.userId);
       if (!user) {
-        return res.json(new apiError.notFound(responseMessages.USER_NOT_FOUND));
+        throw apiError.notFound(responseMessages.USER_NOT_FOUND)
       }
 
       const result = await bidServices.getSellerProductBids(productId, req.userId, { page, limit });
