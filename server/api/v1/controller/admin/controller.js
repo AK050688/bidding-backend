@@ -9,8 +9,8 @@ import userServices from "../../services/user.js";
 import sellerServices from "../../services/sellers.js";
 import bcrypt from "bcrypt";
 import Joi from "joi";
-const { updateUserById, findAdmin, paginate, dashboard, findUserById, findAdminv2 } = userServices;
-const { findSellerById, updateSellerById, findAllRequest, findSellerByBuyerid } = sellerServices;
+const { updateUserById, findAdmin, paginate, dashboard, findUserById, findAdminv2,countUser } = userServices;
+const { findSellerById, updateSellerById, findAllRequest, findSellerByBuyerid ,countSeller} = sellerServices;
 class adminController {
   async adminLogin(req, res, next) {
     const fields = Joi.object({
@@ -233,6 +233,7 @@ class adminController {
           apiError.badRequest(responseMessages.USER_NOT_FOUND)
         );
       }
+        const sellerId = isSeller._id;
       const updateStatus = await updateSellerById(sellerId, { $set: { statusOfApproval: statusOfApproval } })
       await updateUserById(buyerId, { $set: { isSeller: true } })
 
@@ -244,6 +245,7 @@ class adminController {
     }
   }
   async getAllRequest(req, res, next) {
+    
     const fields = Joi.object({
       statusOfApproval: Joi.string()
         .valid(...Object.values(statusOfApproval))
@@ -288,5 +290,91 @@ class adminController {
 
     }
   }
+  async userCountData(req, res, next) {
+    try {
+      const isAdmin = await findAdmin(req.userId);
+      console.log(isAdmin);
+      
+      if (!isAdmin) {
+        throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
+      }
+      const totalBuyer = await countUser({userType:userType.BUYER});
+      const totalSeller = await countSeller({userType:userType.SELLER});
+      return res.json(new successResponse({totalBuyer,totalSeller},responseMessages.DATA_FOUND));
+   } catch (error) {
+    console.log("error in userCountData:", error);
+    return next(error);
+
+    }
+  }
+ 
+async adminDeleteUser(req, res, next) {
+  const schema = Joi.object({
+    userId: Joi.string().required()
+  });
+
+  try {
+    const { userId } = await schema.validateAsync(req.body);
+
+    const isAdmin = await findAdminv2(req.userId);
+    if (!isAdmin) {
+      throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
+    }
+
+    const user = await findUserById(userId);
+    if (!user) {
+      throw apiError.notFound(responseMessages.USER_NOT_FOUND);
+    }
+
+    await deleteUserById(userId);
+
+    return res.json(
+      new successResponse({}, responseMessages.USER_DELETED_SUCCESSFULLY)
+    );
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    return next(error);
+  }
+}
+async markSellerStatus(req, res, next) {
+  const schema = Joi.object({
+    sellerId: Joi.string().required(),
+    sellerStatus: Joi.string().valid("ACTIVE", "BLOCKED", "DELETED").required()
+  });
+
+  try {
+    const { sellerId, sellerStatus } = await schema.validateAsync(req.body);
+
+    const isAdmin = await findAdmin(req.userId);
+    if (!isAdmin) {
+      throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
+    }
+
+    const seller = await findSellerById(sellerId);
+    if (!seller) {
+      throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
+    }
+
+    const updatedSeller = await updateSellerById(
+      sellerId,
+      { $set: { status: sellerStatus } }
+    );
+
+    return res.json(
+      new successResponse(updatedSeller, responseMessages.USER_STATUS_UPDATED)
+    );
+  } catch (error) {
+    console.error("markSellerStatus error:", error);
+    return next(error);
+  }
+}
+
+
+
+
+
+
+
+
 }
 export default new adminController();

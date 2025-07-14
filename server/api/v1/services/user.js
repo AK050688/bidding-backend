@@ -10,6 +10,9 @@ const userServices = {
   createUser: async (insertObj) => {
     return await userModel.create(insertObj);
   },
+  countUser:async(insertObj)=>{
+    return await userModel.countDocuments(insertObj);
+  },
   findUser: async (email) => {
     return await userModel.findOne({ $and: [{ email: email }, { status: { $ne: status.BLOCK } }] });
   },
@@ -17,6 +20,8 @@ const userServices = {
     return await userModel.findOne({ $and: [{ email: email }, { status: { $ne: status.DELETE } }] });
   },
   findUserById: async (id) => {
+    console.log(id,">>>>>>>>>>>");
+    
     return await userModel.findOne({ $and: [{ _id: id }, { status: { $ne: status.DELETE } }] });
   },
   updateUserById: async (query, obj) => {

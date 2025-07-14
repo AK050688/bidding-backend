@@ -1,8 +1,7 @@
 import { model, Schema } from "mongoose";
 import Mongoose from "mongoose";
 import paginate from "mongoose-paginate-v2";
-import { supportStatus } from "../enums/supportStatus.JS";
-import { required } from "joi";
+import { supportStatus } from "../enums/supportStatu.js";
 Mongoose.pluralize(null);
 const supports = Schema(
     {
@@ -35,6 +34,8 @@ const supports = Schema(
             enum: [...Object.values(supportStatus)],
             default: supportStatus.PENDING,
         },
+    
+        
     },
     { timestamps: true }
 );

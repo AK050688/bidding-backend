@@ -46,6 +46,24 @@ const sellers = new Schema({
         type: String,
         enum: [...Object.values(statusOfApproval)],
         default: statusOfApproval.PENDING
-    }
+    },
+     gstDoc_Image: {
+      type: String, 
+    },
+    aadhar_Image: {
+      type: String,
+    },
+    pan_Image: {
+      type: String,
+    },
 }, { timestamps: true });
+
 export default model("sellers", sellers);
+
+
+
+
+
+
+
+

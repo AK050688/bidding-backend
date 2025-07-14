@@ -5,6 +5,7 @@ import categoryModel from "../../../models/category.js";
 import { userType } from "../../../enums/userType.js";
 import { statusOfApproval } from "../../../enums/statusOfApproval.js";
 import { status } from "../../../enums/status.js";
+import BidModel from "../../../models/bidschema.js"
 export default {
   findAdmin: async (id) => {
     const admin = await userModel.findOne({
@@ -17,6 +18,14 @@ export default {
       $and: [{ _id: id }, { status: { $ne: status.BLOCK } }],
     });
   },
+  getHighestBidForProduct: async(productId)=>{
+  return await BidModel
+    .findOne({ productId })
+    .sort({ bidAmount: -1 })  // highest first
+    .limit(1)
+    // .populate("buyerId")
+},
+
   findSeller: async (id) => {
     // const seller = await sellerModel.findOne({ _id: id, $or: [{ userType: userType.ADMIN }, { $and: [{ _id: id }, { statusOfApproval: statusOfApproval.ACCEPTED }] }] });
     return await sellerModel.findOne({

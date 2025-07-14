@@ -5,8 +5,9 @@ import { userType } from "../../../enums/userType.js";
 import { statusOfApproval } from "../../../enums/statusOfApproval.js";
 import { status } from "../../../enums/status.js";
 import productModel from "../../../models/product.js";
+import mongoose from "mongoose";
 
-export default {
+const bitServices = {
   findAdmin: async (id) => {
     const admin = await userModel.findOne({
       $and: [{ _id: id }, { userType: userType.ADMIN }],
@@ -21,6 +22,60 @@ export default {
   placeBid: async (inserObj) => {
     return await bidModel.create(inserObj);
   },
+  findBid: async (inserObj) => {
+    return await bidModel.find(inserObj).populate({ path: "productId" });
+  },
+  findPtoductaggration: async (buyerId) => {
+    // return await bidModel.find({buyerId:buyerId}).populate({path:"productId",select:"",populate:({path:"categoryId", select:"categoryName"})})
+    return await bidModel.aggregate([
+      {
+        $match: { buyerId: new mongoose.Types.ObjectId(buyerId) }
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "productId",
+          foreignField: "_id",
+          as: "product"
+        }
+      },
+      { $unwind: "$product" },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "product.categoryId",
+          foreignField: "_id",
+          as: "product.categoryId"
+        }
+      },
+      { $unwind: "$product.categoryId" },
+  
+      {
+        $project: {
+          // _id: 1,
+          productId: {
+            _id: "$product._id",
+            name: "$product.name",
+            brandName: "$product.brandName",
+            quantity: "$product.quantity",
+            startTime: "$product.startTime",
+            endTime: "$product.endTime",
+            categoryId: {
+              _id: "$product.categoryId._id",
+              categoryName: "$product.categoryId.categoryName"
+            }
+          },
+    
+          buyerId: "$buyerId",
+          bidAmount: "$bidAmount",
+          createdAt: "$createdAt",
+          updatedAt: "$updatedAt",
+          __v: "$__v"
+        }
+      }
+    ]);
+  },
+
   checkPlacedBid: async (buyerId, productId) => {
     return await bidModel.find({ buyerId: buyerId, productId: productId });
   },
@@ -62,6 +117,7 @@ export default {
 
       // Check if bidding is active
       const currentTime = new Date();
+
       if (
         currentTime < product.startTime ||
         currentTime > product.endTime ||
@@ -72,6 +128,7 @@ export default {
 
       // Check if user is admin or seller
       const user = await userModel.findById(userId);
+
       if (!user) {
         throw new Error("User not found");
       }
@@ -82,6 +139,7 @@ export default {
           buyerId: userId,
           statusOfApproval: statusOfApproval.ACCEPTED,
         });
+
         if (!seller) {
           throw new Error("Seller not found or not approved");
         }
@@ -260,3 +318,5 @@ export default {
     }
   },
 };
+
+export default bitServices;

@@ -1,4 +1,5 @@
 import userServices from "../../../v1/services/user.js";
+import bitServices from "../../../v1/services/bid.js";
 import apiError from "../../../../helper/apiError.js";
 import responseMessages from "../../../../../assets/responseMessages.js";
 import Joi from "joi";
@@ -19,6 +20,7 @@ const {
   findUserById,
   updateUser,
 } = userServices;
+const{findBid}=bitServices
 
 export class userController {
   async userSignup(req, res, next) {
@@ -455,5 +457,53 @@ export class userController {
       return next(error);
     }
   }
+
+  async getBuyerBidCount(req, res, next){
+  try {
+    const schema = Joi.object({
+      buyerId: Joi.string().required()
+    });
+      const { error, value } = schema.validate(req.body);
+    if (error) {
+      throw apiError.badRequest(error.details[0].message);
+    }
+
+    const { buyerId } = value;
+    const buyer = await findUserById(buyerId);
+    console.log(buyer,"==============================buyer");
+    
+    
+    if(!buyer){
+      throw apiError.conflict(responseMessages.BUYER_ID_NOT_FOUND);
+    }
+    const bids = await findBid({buyerId})
+    const totalBids = bids.length;
+
+    return res.json(
+      new successResponse(
+        { buyerId, totalBids,bids },
+        responseMessages.TOTAL_BIDS_PLACED
+      )
+    );
+  } catch (error) {
+    console.error("Error fetching buyer bid count:", error.message);
+    return next(error);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 export default new userController();

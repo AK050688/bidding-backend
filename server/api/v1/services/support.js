@@ -3,7 +3,7 @@ import { status } from "../../../enums/status.js";
 import { userType } from "../../../enums/userType.js";
 import userModel from "../../../models/user.js"
 import { statusOfApproval } from "../../../enums/statusOfApproval.js";
-import { supportStatus } from "../../../enums/supportStatus.JS";
+import { supportStatus } from "../../../enums/supportStatu.js";
 
 const supportServices = {
 
@@ -13,7 +13,7 @@ const supportServices = {
         return support
     },
     createRequest: async (insertObj) => {
-        return await sellerModel.create(insertObj);
+        return await supportModel.create(insertObj);
     },
     findUserById: async (id) => {
         return await userModel.findOne({ $and: [{ _id: id }, { status: { $ne: status.BLOCK } }] });
