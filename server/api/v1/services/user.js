@@ -31,7 +31,10 @@ const userServices = {
     return await userModel.findOneAndUpdate(query, obj, { new: true });
   },
   findAll: async () => {
-    return await userModel.find()
+    return await userModel.find().countDocuments();
+  },
+  findAllBuyers:async (query) => {
+    return await userModel.find(query).select("firstName lastName email mobileNumber addressLine city zip status ");
   },
   findAdmin: async (query) => {
     return await userModel.findOne(query);

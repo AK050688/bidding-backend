@@ -13,7 +13,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import fs from "fs"
-const { checkForRequest, createRequest, findAllRequest, findSellerById, findSellerByIds } = sellerServices
+const { checkForRequest, createRequest, findAllRequest, findSellerById, findSellerByIds ,findAllSeller} = sellerServices
 const { findUserById } = userServices;
 export class sellerController {
     // async requestForSeller(req, res, next) {
@@ -147,7 +147,11 @@ export class sellerController {
                     throw apiError.conflict(responseMessages.MOBILE_ALREADY_EXIST);
                 } else if (checkAlreadyRequested.status === "REJECTED") {
                     const result = await createRequest(validatedBody);
+                    // 👉 Update user as seller after REAPPLY
+                    await updateUserById(req.userId, { isSeller: true });
                     return res.json(new successResponse(result, responseMessages.REAPPLIED_REQUEST));
+
+
                 } else if (checkAlreadyRequested.status === "BLOCK") {
                     throw apiError.conflict(responseMessages.REQUEST_BLOCKED);
                 } else if (checkAlreadyRequested.email === email) {
@@ -281,6 +285,7 @@ export class sellerController {
             return next(error);
         }
     }
+  
 
 
 

@@ -1,5 +1,7 @@
 import userServices from "../../../v1/services/user.js";
-import bitServices from "../../../v1/services/bid.js";
+import bidServices from "../../../v1/services/bid.js";
+import productServices from "../../services/product.js";
+import sellerServices from "../../services/sellers.js";
 import apiError from "../../../../helper/apiError.js";
 import responseMessages from "../../../../../assets/responseMessages.js";
 import Joi from "joi";
@@ -19,8 +21,11 @@ const {
   findAll,
   findUserById,
   updateUser,
+  findAllBuyers
 } = userServices;
-const{findBid}=bitServices
+const{findBid,getLiveBidCount,getLiveBidCounts}=bidServices;
+const{allProductDocuments,findIsSoldProduct}=productServices;
+const { findSellerDoc } = sellerServices;
 
 export class userController {
   async userSignup(req, res, next) {
@@ -490,6 +495,9 @@ export class userController {
     return next(error);
   }
 }
+
+
+
 
 
 

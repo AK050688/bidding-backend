@@ -34,6 +34,8 @@ export default {
     // const seller = await sellerModel.findOne({ $and: [{ _id: id }, { statusOfApproval: statusOfApproval.ACCEPTED }] });
   },
   findSellerByBuyerId: async (id) => {
+    console.log(id);
+    
     // const seller = await sellerModel.findOne({ _id: id, $or: [{ userType: userType.ADMIN }, { $and: [{ _id: id }, { statusOfApproval: statusOfApproval.ACCEPTED }] }] });
     return await sellerModel.findOne({
       $and: [{ buyerId: id }, { statusOfApproval: statusOfApproval.ACCEPTED }],
@@ -65,6 +67,9 @@ export default {
   },
   createProduct: async (insertObj) => {
     return await productModel.create(insertObj);
+  },
+ createaggration: async (insertObj) => {
+    return await productModel.find(insertObj).populate("categoryId").populate("sellerId");
   },
   updateProduct: async (productId, productData) => {
     const updatedProduct = await productModel.findByIdAndUpdate(
@@ -205,4 +210,16 @@ export default {
       throw new Error(`Error fetching products by category and brand: ${error.message}`);
     }
   },
+  allProductDocuments: async () => {
+    
+      const products = await productModel.find().countDocuments()
+      return products;
+    
+  },
+  findIsSoldProduct: async () => {
+    const products = await productModel.find({ isSold: true }).countDocuments();
+    return products;
+  },
+
+ 
 };

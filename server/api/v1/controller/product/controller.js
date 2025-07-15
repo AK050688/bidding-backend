@@ -1,4 +1,7 @@
 import productServices from "../../../v1/services/product.js";
+import bidschema from "../../../../models/bidschema.js";
+import productModel from "../../../../models/product.js";
+import sellerServices from "../../services/sellers.js";
 import mongoose from "mongoose";
 import bidServices from "../../../v1/services/bid.js"
 import apiError from "../../../../helper/apiError.js";
@@ -32,9 +35,10 @@ const {
   getFilteredProducts,
   getProductsByCategoryAndBrand,
   findSellerByBuyerId,
-  getHighestBidForProduct
+  getHighestBidForProduct,
 } = productServices;
 const { getSellerProductBids, findPtoductaggration } = bidServices
+const{}=sellerServices
 
 class ProductController {
   async createProduct(req, res, next) {
@@ -84,7 +88,7 @@ class ProductController {
       }
       if (user.userType === userType.BUYER) {
         const sellerDetails = await findSellerByBuyerId(req.userId);
-        console.log(sellerDetails, "=====================");
+        console.log(sellerDetails, "=====================>");
 
         if (!sellerDetails) {
           throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
@@ -590,13 +594,13 @@ class ProductController {
         throw apiError.notFound("No bids placed on this product");
       }
 
-     
+
       await updateProduct(productId, {
         winnerId: topBid.buyerId,
         isSold: true,
       });
 
-    
+
       return res.json(
         new successResponse(
           {
@@ -614,6 +618,207 @@ class ProductController {
       return next(error);
     }
   }
+  // async getTopBrands(req, res, next) {
+  // try {
+  //  const  findProduct = await productModel.find({ isSold: true});
+  //   if (!findProduct || findProduct.length === 0) {
+  //     throw apiError.notFound("No products found");
+  //   }
+
+  //   const brands = findProduct.map(product => product.brandName);
+  //   const brandCount = {};
+
+  //   brands.forEach(brand => {
+  //     brandCount[brand] = (brandCount[brand] || 0) + 1;
+  //   });
+
+  //   const sortedBrands = Object.entries(brandCount).sort((a, b) => b[1] - a[1]);
+  //   const topBrands = sortedBrands.slice(0, 5).map(([brand, count,bidAmount]) => ({ brand, count ,bidAmount}));
+  //   if (topBrands.length === 0) {
+  //     throw apiError.notFound("No top brands found");
+  //   }
+  
+  //   return res.json(new successResponse(topBrands, "Top brands fetched successfully"));
+    
+  // } catch (error) {
+  //   console.error("Error fetching top brands:", error);
+  //   return next(error);
+    
+  // }
+  // };
+
+// async getTopBrands(req, res, next) {
+//   try {
+//     const findProduct = await productModel.find({ isSold: true });
+
+//     if (!findProduct || findProduct.length === 0) {
+//       throw apiError.notFound("No sold products found");
+//     }
+
+//     // Step 1: Group by brand
+//     const brandMap = {};
+//     let grandTotalQuantity = 0;
+//     let grandTotalBidAmount = 0;
+
+//     for (const product of findProduct) {
+//       const brand = product.brandName || "Unknown";
+//       const price = product.price || 0;
+//       const quantity = product.quantity || 1;
+
+//       if (!brandMap[brand]) {
+//         brandMap[brand] = {
+//           brand,
+//           totalQuantity: 0,
+//           totalBidAmount: 0,
+//         };
+//       }
+
+//       brandMap[brand].totalQuantity += quantity;
+//       brandMap[brand].totalBidAmount += price;
+
+//       grandTotalQuantity += quantity;
+//       grandTotalBidAmount += price;
+//     }
+
+//     // Step 2: Format with percentages
+//     const brandList = Object.values(brandMap).map(item => {
+//       const quantityPercentage = ((item.totalQuantity / grandTotalQuantity) * 100).toFixed(0);
+//       const mrpPercentage = ((item.totalBidAmount / grandTotalBidAmount) * 100).toFixed(2);
+
+//       return {
+//         brand: item.brand,
+//         quantity: `${item.totalQuantity} (${quantityPercentage}%)`,
+//         lotMRP: `₹ ${item.totalBidAmount.toLocaleString()} (${mrpPercentage}%)`,
+//       };
+//     });
+
+//     // Step 3: Sort by quantity desc
+//     const sortedTopBrands = brandList.sort((a, b) => {
+//       const aQty = parseInt(a.quantity.split(' ')[0]);
+//       const bQty = parseInt(b.quantity.split(' ')[0]);
+//       return bQty - aQty;
+//     });
+
+//     return res.json(new successResponse(sortedTopBrands, "Top brands fetched successfully"));
+//   } catch (error) {
+//     console.error("Error fetching top brands:", error);
+//     return next(error);
+//   }
+// }
+
+async getTopBrands(req, res, next) {
+  try {
+    const soldProductsAggregation = await productModel.aggregate([
+      {
+        $match: { isSold: true } // only sold products
+      },
+      {
+        $lookup: {
+          from: "categories", // match your model name
+          localField: "categoryId",
+          foreignField: "_id",
+          as: "category"
+        }
+      },
+      {
+        $unwind: "$category"
+      },
+      {
+        $project: {
+          brandName: 1,
+          categoryName: "$category.categoryName",
+          quantity: 1,
+          lotMRP: { $multiply: ["$minBid", "$quantity"] } // price * quantity
+        }
+      },
+      {
+        $facet: {
+          topBrands: [
+            {
+              $group: {
+                _id: "$brandName",
+                totalQuantity: { $sum: "$quantity" },
+                totalMRP: { $sum: "$lotMRP" }
+              }
+            },
+            {
+              $sort: { totalQuantity: -1 }
+            }
+          ],
+          topCategories: [
+            {
+              $group: {
+                _id: "$categoryName",
+                totalQuantity: { $sum: "$quantity" },
+                totalMRP: { $sum: "$lotMRP" }
+              }
+            },
+            {
+              $sort: { totalQuantity: -1 }
+            }
+          ],
+          grandTotals: [
+            {
+              $group: {
+                _id: null,
+                totalQuantity: { $sum: "$quantity" },
+                totalMRP: { $sum: "$lotMRP" }
+              }
+            }
+          ]
+        }
+      }
+    ]);
+
+    const { topBrands, topCategories, grandTotals } = soldProductsAggregation[0];
+
+    if (!grandTotals.length) {
+      throw apiError.notFound("No sold products found");
+    }
+
+    const grandQty = grandTotals[0].totalQuantity || 1;
+    const grandMRP = grandTotals[0].totalMRP || 1;
+
+    const formattedBrands = topBrands.map((brand) => ({
+      brand: brand._id,
+      quantity: `${brand.totalQuantity} (${((brand.totalQuantity / grandQty) * 100).toFixed(0)}%)`,
+      lotMRP: `₹ ${brand.totalMRP.toLocaleString("en-IN")} (${((brand.totalMRP / grandMRP) * 100).toFixed(2)}%)`
+    }));
+
+    const formattedCategories = topCategories.map((cat) => ({
+      category: cat._id,
+      quantity: `${cat.totalQuantity} (${((cat.totalQuantity / grandQty) * 100).toFixed(0)}%)`,
+      lotMRP: `₹ ${cat.totalMRP.toLocaleString("en-IN")} (${((cat.totalMRP / grandMRP) * 100).toFixed(2)}%)`
+    }));
+
+    return res.json({
+      responseCode: 200,
+      responseMessage: "Top brands and categories fetched successfully",
+      data: {
+        topBrands: formattedBrands,
+        topCategories: formattedCategories
+      }
+    });
+
+  } catch (error) {
+    console.error("Error fetching top brands and categories:", error);
+    return next(error);
+  }
+}
+
+
+
+ 
+
+
+
+
+
+
+
+
+  
+
 
 
 
