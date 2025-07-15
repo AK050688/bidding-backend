@@ -317,6 +317,56 @@ const bitServices = {
       throw new Error(`Error fetching seller products with bids: ${error.message}`);
     }
   },
+ getLiveBidCount :async () => {
+  const now = new Date();
+
+  const result = await bidModel.aggregate([
+    {
+      $lookup: {
+        from: "products",
+        localField: "productId",
+        foreignField: "_id",
+        as: "product"
+      }
+    },
+    { $unwind: "$product" },
+    {
+      $match: {
+        "product.isSold": false,
+        "product.startTime": { $lte: now },
+        "product.endTime": { $gte: now }
+      }
+    },
+    {
+      $count: "liveBids"
+    }
+  ]);
+
+  return result.length > 0 ? result[0].liveBids : 0;
+},
+ getLiveBidCounts  :async () => {
+  const currentTime = new Date();
+
+  // Find all bids with their product populated
+  const bids = await bidModel.find().populate("productId");
+
+  let liveBidCount = 0;
+
+  for (const bid of bids) {
+    const product = bid.productId;
+
+    // Check if product is live and not sold
+    if (
+      currentTime >= product.startTime &&
+      currentTime <= product.endTime &&
+      !product.isSold
+    ) {
+      liveBidCount++;
+    }
+  }
+
+  return liveBidCount;
+}
 };
 
 export default bitServices;

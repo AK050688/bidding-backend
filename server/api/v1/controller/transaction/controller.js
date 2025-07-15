@@ -12,7 +12,7 @@ import { paymentStatus } from "../../../../enums/paymentStatus.js";
 import successResponse from "../../../../../assets/response.js";
 const { findUserById } = userServices;
 const { findSellerByIds } = sellerServices;
-const { createRequest } = transactionServices;
+const { createRequest,findTransactionByOrderId,updateTransactionByOrderId } = transactionServices;
 
 const razorpay = new Razorpay({
     key_id: config.get("razorpay.RAZOR_PAY_KEY_ID"),
@@ -135,47 +135,90 @@ class transactionController {
             return next(error);
         }
     }
-    async verifyAndStoreTransaction(req, res, next) {
+    // async verifyAndStoreTransaction(req, res, next) {
         
-        try {
-            const {
-                razorpay_order_id,
-                razorpay_payment_id,
-                razorpay_signature,
-                buyerId,
-                sellerId,
-                productId,
-                bidId,
-                amount,
-                paymentMethod,
-            } = req.body;
-            const generatedSignature = crypto
-                .createHmac("sha256", razorpay)
-                .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-                .digest("hex");
+    //     try {
+    //         const {
+    //             razorpay_order_id,
+    //             razorpay_payment_id,
+    //             razorpay_signature,
+    //         } = req.body;
+    //         const generatedSignature = crypto
+    //             .createHmac("sha256", razorpay)
+    //             .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+    //             .digest("hex");
 
-            if (generatedSignature !== razorpay_signature) {
-                return res.status(400).json({ success: false, message: "Invalid signature" });
-            }
-            const transaction = await createRequest({
-                buyerId,
-                sellerId,
-                productId,
-                bidId,
-                amount,
-                paymentMethod,
-                paymentStatus: "success",
-                transactionId: razorpay_payment_id,
-            });
+    //         if (generatedSignature !== razorpay_signature) {
+    //             return res.status(400).json({ success: false, message: "Invalid signature" });
+    //         }
+    //         const transaction = await createRequest({
+    //             buyerId,
+    //             sellerId,
+    //             productId,
+    //             bidId,
+    //             amount,
+    //             paymentMethod,
+    //             paymentStatus: "success",
+    //             transactionId: razorpay_payment_id,
+    //         });
 
-            res.status(201).json({ success: true, message: "Payment verified", transaction });
-        } catch (error) {
-            console.log("error", error);
-            next(error);
+    //         res.status(201).json({ success: true, message: "Payment verified", transaction });
+    //     } catch (error) {
+    //         console.log("error", error);
+    //         next(error);
 
 
+    //     }
+    // }
+      async verifyAndStoreTransaction(req, res, next) {
+    try {
+      const {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+      } = req.body;
+
+      const transaction = await findTransactionByOrderId(razorpay_order_id);
+    //   console.log(transaction, "===============================>transaction");
+      
+      if (!transaction) {
+        throw apiError.notFound(responseMessages.TRANSACTION_NOT_FOUND);
+      }
+
+      const generatedSignature = crypto
+        .createHmac("sha256", config.get("razorpay.RAZOR_PAY_KEY_SECRET"))
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest("hex");
+
+      if (generatedSignature !== razorpay_signature) {
+        await updateTransactionByOrderId(razorpay_order_id, {
+          paymentStatus: paymentStatus.FAILED,
+          transactionId: razorpay_payment_id,
+        });
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid payment signature" });
+      }
+
+      const updatedTransaction = await updateTransactionByOrderId(
+        razorpay_order_id,
+        {
+          paymentStatus: paymentStatus.SUCCESS,
+          transactionId: razorpay_payment_id,
         }
+      );
+
+      return res.status(200).json(
+        new successResponse(
+          updatedTransaction,
+          "Payment verified and transaction updated"
+        )
+      );
+    } catch (error) {
+      console.log("verifyAndStoreTransaction Error:", error);
+      return next(error);
     }
+  }
 
 
 

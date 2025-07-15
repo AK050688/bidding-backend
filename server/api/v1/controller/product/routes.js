@@ -47,4 +47,6 @@ export default Express.Router()
   )
   .get("/getSellerProductBids",auth.verifyToken,controller.getSellerProductBids)
   .get("/getBidCategoriesByBuyer/:buyerId/bid-categories", auth.verifyToken, controller.getBidCategoriesByBuyer)
-  .get("/chooseWinner/:productId",auth.verifyToken,controller.chooseWinner);
+  .get("/chooseWinner/:productId",auth.verifyToken,controller.chooseWinner)
+  .get("/getTopBrands", controller.getTopBrands)
+  
