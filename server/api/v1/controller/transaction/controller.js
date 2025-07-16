@@ -12,11 +12,11 @@ import { paymentStatus } from "../../../../enums/paymentStatus.js";
 import successResponse from "../../../../../assets/response.js";
 const { findUserById } = userServices;
 const { findSellerByIds } = sellerServices;
-const { createRequest,findTransactionByOrderId,updateTransactionByOrderId } = transactionServices;
+const { createRequest, findTransactionByOrderId, updateTransactionByOrderId } = transactionServices;
 
 const razorpay = new Razorpay({
-    key_id: config.get("razorpay.RAZOR_PAY_KEY_ID"),
-    key_secret: config.get("razorpay.RAZOR_PAY_KEY_SECRET"),
+  key_id: config.get("razorpay.RAZOR_PAY_KEY_ID"),
+  key_secret: config.get("razorpay.RAZOR_PAY_KEY_SECRET"),
 });
 
 
@@ -25,153 +25,90 @@ const razorpay = new Razorpay({
 
 class transactionController {
 
-    // async createOrder(req, res, next) {
-    //     const validateSchema = Joi.object({
-    //         amount: Joi.number().required(),
-    //         buyerId: Joi.string().required(),
-    //         sellerId: Joi.string().required(),
-    //         productId: Joi.string().required(),
-    //         bidId: Joi.string().required(),
 
-    //     });
-    //     try {
-    //         // const validatedBody = await validateSchema.validateAsync(req.boby);
-    //         const { error, value: validatedBody } = validateSchema.validate(req.body);
+  async createOrder(req, res, next) {
+    const validateSchema = Joi.object({
+      amount: Joi.number().required(),
+      buyerId: Joi.string().required(),
+      sellerId: Joi.string().required(),
+      productId: Joi.string().required(),
+      bidId: Joi.string().required(),
+      paymentMethod: Joi.string().required(),
+    });
 
-    //         if (error) {
-    //             console.log("Validation Error:", error.details[0].message);
-    //             throw apiError.badRequest(error.details[0].message);
-    //         }
-
-    //         const { amount, buyerId, sellerId, productId, bidId } = validatedBody;
-    //         const buyer = await findUserById(buyerId);
-    //         const seller = await findSellerByIds(sellerId);
-    //         if (!buyer || !seller) {
-    //             throw apiError.notFound(responseMessages.BUYER_AND_SELLER_NOT_FOUND);
-    //         }
-    //         const option = {
-    //             amount: amount * 100,
-    //             currency: "INR",
-    //             receipt: `receipt_order_${Date.now()}`,
-    //         };
-    //         console.log(option);
-
-    //         const order = await razorpay.orders.create(option);
-    //         return res.json(new successResponse(order, responseMessages.ORDER_CREATE));
-    //     } catch (error) {
-    //         console.log("Error", error);
-    //         return next(error)
-
-
-    //     }
-
-    // }
-    async createOrder(req, res, next) {
-        const validateSchema = Joi.object({
-            amount: Joi.number().required(),
-            buyerId: Joi.string().required(),
-            sellerId: Joi.string().required(),
-            productId: Joi.string().required(),
-            bidId: Joi.string().required(),
-            paymentMethod: Joi.string().required(),
-        });
-
-        try {
-            const { error, value: validatedBody } = validateSchema.validate(req.body);
-
-            if (error) {
-                console.log("Validation Error:", error.details[0].message);
-                throw apiError.badRequest(error.details[0].message);
-            }
-
-            const { amount, buyerId, sellerId, productId, bidId ,paymentMethod} = validatedBody;
-
-            const buyer = await findUserById(buyerId);
-            const seller = await findSellerByIds(sellerId);
-            if (!buyer || !seller) {
-                throw apiError.notFound(responseMessages.BUYER_AND_SELLER_NOT_FOUND);
-            }
-
-            const options = {
-                amount: amount * 100,
-                currency: "INR",
-                receipt: `receipt_order_${Date.now()}`,
-            };
-
-            razorpay.orders.create(options, async (err, rpOrder) => {
-                if (err) {
-                    console.log("Razorpay Error:", err);
-                    return next(apiError.internal("Failed to create payment order"));
-                }
-                const transactionPayload = {
-                    buyerId,
-                    paymentMethod,
-                    sellerId,
-                    productId,
-                    bidId,
-                    amount,
-                    paymentStatus:paymentStatus.CREATED,
-                    transactionId: rpOrder.id, 
-                };
-
-                const createdTransaction = await createRequest(transactionPayload);
-
-
-                return res.status(200).json(
-                    new successResponse(
-                        {
-                            orderId: rpOrder.id,
-                            amount: rpOrder.amount,
-                            currency: rpOrder.currency,
-                            receipt: rpOrder.receipt,
-                            transaction: createdTransaction,
-                        },
-                        responseMessages.ORDER_CREATE
-                    )
-                );
-            });
-        } catch (error) {
-            console.log("CreateOrder Error:", error);
-            return next(error);
-        }
-    }
-    // async verifyAndStoreTransaction(req, res, next) {
-        
-    //     try {
-    //         const {
-    //             razorpay_order_id,
-    //             razorpay_payment_id,
-    //             razorpay_signature,
-    //         } = req.body;
-    //         const generatedSignature = crypto
-    //             .createHmac("sha256", razorpay)
-    //             .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-    //             .digest("hex");
-
-    //         if (generatedSignature !== razorpay_signature) {
-    //             return res.status(400).json({ success: false, message: "Invalid signature" });
-    //         }
-    //         const transaction = await createRequest({
-    //             buyerId,
-    //             sellerId,
-    //             productId,
-    //             bidId,
-    //             amount,
-    //             paymentMethod,
-    //             paymentStatus: "success",
-    //             transactionId: razorpay_payment_id,
-    //         });
-
-    //         res.status(201).json({ success: true, message: "Payment verified", transaction });
-    //     } catch (error) {
-    //         console.log("error", error);
-    //         next(error);
-
-
-    //     }
-    // }
-      async verifyAndStoreTransaction(req, res, next) {
     try {
+      const { error, value: validatedBody } = validateSchema.validate(req.body);
+
+      if (error) {
+        console.log("Validation Error:", error.details[0].message);
+        throw apiError.badRequest(error.details[0].message);
+      }
+
+      const { amount, buyerId, sellerId, productId, bidId, paymentMethod } = validatedBody;
+
+      const buyer = await findUserById(buyerId);
+      const seller = await findSellerByIds(sellerId);
+      if (!buyer || !seller) {
+        throw apiError.notFound(responseMessages.BUYER_AND_SELLER_NOT_FOUND);
+      }
+
+      const options = {
+        amount: amount * 100,
+        currency: "INR",
+        receipt: `receipt_order_${Date.now()}`,
+      };
+
+      razorpay.orders.create(options, async (err, rpOrder) => {
+        if (err) {
+          console.log("Razorpay Error:", err);
+          return next(apiError.internal("Failed to create payment order"));
+        }
+        const transactionPayload = {
+          buyerId,
+          paymentMethod,
+          sellerId,
+          productId,
+          bidId,
+          amount,
+          paymentStatus: paymentStatus.CREATED,
+          transactionId: rpOrder.id,
+          razorpayOrderId: rpOrder.id,
+        };
+
+        const createdTransaction = await createRequest(transactionPayload);
+
+
+        return res.status(200).json(
+          new successResponse(
+            {
+              orderId: rpOrder.id,
+              amount: rpOrder.amount,
+              currency: rpOrder.currency,
+              receipt: rpOrder.receipt,
+              transaction: createdTransaction,
+            },
+            responseMessages.ORDER_CREATE
+          )
+        );
+      });
+    } catch (error) {
+      console.log("CreateOrder Error:", error);
+      return next(error);
+    }
+  }
+
+  async verifyAndStoreTransaction(req, res, next) {
+    const validateSchema = Joi.object({
+      razorpay_order_id: Joi.string().required(),
+      razorpay_payment_id: Joi.string().required(),
+      razorpay_signature: Joi.string().required()
+    });
+    try {
+      const { error, value } = validateSchema.validate(req.body);
+      if (error) {
+        logger.warn(`Signature verification error: ${error.details[0].message}`);
+        throw apiError.badRequest(error.details[0].message);
+      }
       const {
         razorpay_order_id,
         razorpay_payment_id,
@@ -179,8 +116,8 @@ class transactionController {
       } = req.body;
 
       const transaction = await findTransactionByOrderId(razorpay_order_id);
-    //   console.log(transaction, "===============================>transaction");
-      
+      //   console.log(transaction, "===============================>transaction");
+
       if (!transaction) {
         throw apiError.notFound(responseMessages.TRANSACTION_NOT_FOUND);
       }
@@ -205,6 +142,7 @@ class transactionController {
         {
           paymentStatus: paymentStatus.SUCCESS,
           transactionId: razorpay_payment_id,
+          completedAt: new Date()
         }
       );
 

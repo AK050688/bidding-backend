@@ -23,6 +23,13 @@ export default {
 	BUYER_AND_SELLER_NOT_FOUND: 'Buyer or seller not found',
 	ORDER_CREATE: 'Order create successfully.',
 	TRANSACTION_NOT_FOUND: 'Transaction not found for order ID',
+	TRANSACTION_NOT_FOUND_FOR_ORDER_ID: 'Transaction not found for order ID',
+	ADMIN_CAN_ACCESS:'Only admin can access this resource',
+	TRANSACTION_FOUND:'All transactions fetched successfully',
+	TRANSACTION_NOT_FOUND: 'Transaction not found',
+	TRANSACTION_STATUS_UPDATED: 'Transaction status updated successfully',
+	TRANSACTION_NOT_UPDATED: 'Transaction status not updated',
+	
 
 	REQUEST_ALREADY_EXIST: 'Request already exist.',
 	USER_NOT_FOUND: 'User not found.',

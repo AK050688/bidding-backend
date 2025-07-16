@@ -4,7 +4,7 @@ import sellerModel from "../../../models/seller.js";
 import { userType } from "../../../enums/userType.js";
 import { statusOfApproval } from "../../../enums/statusOfApproval.js";
 import { status } from "../../../enums/status.js";
-import productModel from "../../../models/product.js";
+// import productModel from "../../../models/product.js";
 import mongoose from "mongoose";
 
 const bitServices = {

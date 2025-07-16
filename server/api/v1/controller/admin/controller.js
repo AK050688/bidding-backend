@@ -2,19 +2,21 @@ import successResponse from "../../../../../assets/response.js";
 import responseMessages from "../../../../../assets/responseMessages.js";
 import { status } from "../../../../enums/status.js";
 import { statusOfApproval } from "../../../../enums/statusOfApproval.js";
+import transactionServices from "../../services/transaction.js";
 import { userType } from "../../../../enums/userType.js";
 import apiError from "../../../../helper/apiError.js";
 import commonFunction from "../../../../helper/utils.js";
 import userServices from "../../services/user.js";
 import sellerServices from "../../services/sellers.js";
 import bidService from "../../services/bid.js";
-import productService from "../../services/product.js";
+// import productService from "../../services/product.js";
 import bcrypt from "bcrypt";
 import Joi from "joi";
 const { updateUserById, findAdmin, paginate, findUserById, findAdminv2, countUser, findAll, findAllBuyers } = userServices;
 const { findSellerById, updateSellerById, findAllRequest, findSellerByBuyerid, countSeller, findSellerDoc,findAllSeller } = sellerServices;
-const { allProductDocuments, findIsSoldProduct, } = productService;
+// const { allProductDocuments, findIsSoldProduct, } = productService;
 const { getLiveBidCounts } = bidService;
+const{findTransaction,findAndUpdate,findTransactionByOrderId}=transactionServices;
 
 class adminController {
   async adminLogin(req, res, next) {
@@ -431,6 +433,51 @@ class adminController {
       return next(error);
     }
   }
+  async getAllTransactions(req, res, next) {
+  try {
+    if (!req.user || req.user.userType !== userType.ADMIN) {
+      throw apiError.forbidden(responseMessages.ADMIN_CAN_ACCESS);
+    }
+
+    const transactions = await findTransaction();
+
+    return res.status(200).json(
+      new successResponse(transactions, responseMessages.TRANSACTION_FOUND)
+    );
+  } catch (error) {
+    console.error("getAllTransactions Error:", error);
+    return next(error);
+  }
+}
+
+  async getTransactionByOrderId(req, res, next) {
+    const schema = Joi.object({
+      orderId: Joi.string().required(),
+    });
+
+    try {
+      const { error, value } = schema.validate(req.params);
+      if (error) throw apiError.badRequest(error.details[0].message);
+
+      const { orderId } = value;
+
+      const transaction = await findTransactionByOrderId(orderId);
+      if (!transaction) {
+        throw apiError.notFound(responseMessages.TRANSACTION_NOT_FOUND_FOR_ORDER_ID);
+      }
+
+      return res.status(200).json(
+        new successResponse(transaction, responseMessages.TRANSACTION_FOUND)
+      );
+    } catch (error) {
+      console.error("getTransactionByOrderId Error:", error);
+      return next(error);
+    }
+  }
+
+
+
+
 
 
 
