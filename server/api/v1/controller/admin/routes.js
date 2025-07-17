@@ -17,6 +17,8 @@ export default Express.Router()
     .get("/Dashboard", auth.verifyToken, controller.Dashboard)
     .get("/getAllBuyers", auth.verifyToken,controller.getAllBuyers)
     .get("/getAllSeller",auth.verifyToken,controller.getAllSeller)
+    .get("/getAllTransactions", auth.verifyToken, controller.getAllTransactions)
+    .get("/getTransactionByOrderId/:orderId", auth.verifyToken, controller.getTransactionByOrderId)
 
    
 

@@ -31,7 +31,7 @@ const trnasactionSchema = new Schema({
     },
     paymentMethod: {
         type: String,
-        // enum: ["card", "upi", "netbanking", "wallet", "cod"],
+        // enum: ["card", "upi", "netbanking", "wallet"],
         enum:     [...Object.values(paymentMethod)]      ,
         required: true,
     },

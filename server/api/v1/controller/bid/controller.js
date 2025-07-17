@@ -7,7 +7,7 @@ import successResponse from "../../../../../assets/response.js";
 import { status } from "../../../../enums/status.js";
 import { userType } from "../../../../enums/userType.js";
 import sellerServices from "../../services/sellers.js";
-import productServices from "../../services/product.js";
+// import productServices from "../../services/product.js";
 const { findSellerById, updateSellerById, findAllRequest, findSellerByBuyerid } = sellerServices;
 const {
   placeBid,

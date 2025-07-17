@@ -1,35 +1,35 @@
-import transactionsModel from "../../../models/transaction.js";
+import lotItemModel from "../../../models/lotItem";
 
-const transactionServices = {
+const lotItemServices = {
   findTransaction: async (transactionId) => {
-    return await transactionsModel.find().populate("buyerId sellerId productId bidId")
+    return await lotItemModel.find().populate("buyerId sellerId productId bidId")
 
   },
   findAndUpdate: async (transactionId, updateObj) => {
-    return await transactionsModel.findOneAndUpdate(
+    return await lotItemModel.findOneAndUpdate(
       { transactionId },
       { paymentStatus: newStatus },
       { new: true }
     )
   },
   createRequest: async (insertObj) => {
-    return await transactionsModel.create(insertObj);
+    return await lotItemModel.create(insertObj);
   },
   findTransactionByOrderId: async (orderId) => {
-    return await transactionsModel.findOne({ transactionId: orderId });
+    return await lotItemModel.findOne({ transactionId: orderId });
   },
   updateTransactionByOrderId: async (orderId, updateObj) => {
-    return await transactionsModel.findOneAndUpdate(
+    return await lotItemModel.findOneAndUpdate(
       { transactionId: orderId },
       { $set: updateObj },
       { new: true }
     );
   },
   countTransactionsByBuyerId: async (buyerId) => {
-    return await transactionsModel.countDocuments({ buyerId });
+    return await lotItemModel.countDocuments({ buyerId });
   },
  findTransactions: async (query) => {
-  return await transactionsModel
+  return await lotItemModel
     .find(query)
     .select("paymentStatus buyerId")
     .populate({ path: "buyerId", select: "name" });
@@ -38,30 +38,6 @@ const transactionServices = {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
   
-export default transactionServices;
+export default lotItemServices;
