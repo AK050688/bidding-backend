@@ -6,6 +6,8 @@ import seller from "./api/v1/controller/seller/routs.js"
 import bid from "./api/v1/controller/bid/routes.js"
 import support from "./api/v1/controller/support/routes.js"
 import transaction from './api/v1/controller/transaction/router.js'
+import lotItem from './api/v1/controller/lotItem/router.js'
+import lot from './api/v1/controller/lot/router.js'
 
 
 
@@ -18,6 +20,8 @@ export default function routes(app) {
     app.use("/api/v1/bid", bid)
     app.use("/api/v1/support",support)
     app.use("/api/v1/transaction",transaction)
+    app.use("/api/v1/lotItem", lotItem)
+    app.use("/api/v1/lot", lot)
 
 
 

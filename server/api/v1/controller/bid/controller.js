@@ -7,22 +7,25 @@ import successResponse from "../../../../../assets/response.js";
 import { status } from "../../../../enums/status.js";
 import { userType } from "../../../../enums/userType.js";
 import sellerServices from "../../services/sellers.js";
+
 // import productServices from "../../services/product.js";
 const { findSellerById, updateSellerById, findAllRequest, findSellerByBuyerid } = sellerServices;
 const {
   placeBid,
-  checkProduct,
+  islot,
+  checklot,
   findUserById,
   checkPlacedBid,
-  getBidsOnProduct,
-  getSellerProductsWithBids,
-  getSellerProductsWithEndBids
+  getBidsOnLot,
+  getSellerlotsWithBids,
+  getSellerlotsWithEndBids,
+  updateLot
 } = bidServices;
 
 class bidController {
   async placeBid(req, res, next) {
     const fields = Joi.object({
-      productId: Joi.string().hex().length(24).required(),
+      lotId: Joi.string().hex().length(24).required(),
       bidAmount: Joi.number().min(0).required(),
     });
 
@@ -30,48 +33,49 @@ class bidController {
       const { error, value } = fields.validate(req.body);
       if (error) {
         console.error(error.details);
-        return res.json({ error: error.message });
+        throw apiError.badRequest(error.message);
       }
 
-      const { productId, bidAmount } = value;
+      const { lotId, bidAmount } = value;
 
       const user = await findUserById(req.userId);
       if (!user) {
-        return res.json(new apiError.notFound(responseMessages.USER_NOT_FOUND));
-      }
 
-      // if (user.userType !== userType.BUYER) {
-      //   return res.json(apiError.forbidden(responseMessages.UNAUTHORIZED));
-      // }
-      const isProduct = await checkProduct(productId);
-      if (!isProduct) {
-        return res.json(apiError.notFound(responseMessages.PRODUCT_NOT_FOUND));
+        throw apiError.notFound(responseMessages.USER_NOT_FOUND);
       }
+      const islot = await checklot(lotId);
+      if (!islot) {
+        throw apiError.notFound(responseMessages.LOT_NOT_FOUND);
+      }
+        if (islot.sellerId.toString() === req.userId.toString()) {
+      throw apiError.badRequest(responseMessages.SELLER_CAN_NOT_ALLOWED_TO_BID_OWN_LOT);
+    }
       const currentTime = new Date();
       if (
-        currentTime < isProduct.startTime ||
-        currentTime > isProduct.endTime ||
-        isProduct.isSold
+        currentTime < islot.startTime ||
+        currentTime > islot.endTime ||
+        islot.isSold
       ) {
         return res.json(
           apiError.notFound(responseMessages.BIDING_NOT_AVILABLE)
         );
       }
-      if (bidAmount < isProduct.minBid) {
-        return res.json(apiError.notFound(responseMessages.BID_ALREADY_PLACED));
+      if (bidAmount < islot.floorPrice) {
+        throw apiError.notFound(responseMessages.BID_ALREADY_PLACED);
       }
-      const isAlreadyBid = checkPlacedBid(req.userId, productId);
-      if (isAlreadyBid>0) {
-        return res.json(
-          apiError.badRequest(responseMessages.BIDING_NOT_AVILABLE)
-        );
+      const isAlreadyBid = checkPlacedBid(req.userId, lotId);
+      if (isAlreadyBid > 0) {
+        throw apiError.badRequest(responseMessages.BID_AMOUNT_ATLEAST);
       }
-       const bidData = {
-      productId,
-      bidAmount,
-      buyerId: req.userId,
-    };
+      const bidData = {
+        lotId,
+        bidAmount,
+        buyerId: req.userId,
+      };
       const newBid = await placeBid(bidData);
+      if (bidAmount < islot.maxBidAmount) {
+      await updateLot(lotId, { maxBidAmount: bidAmount });
+    }
 
       return res.json(new successResponse(newBid, responseMessages.BID_PLACED));
     } catch (error) {
@@ -79,64 +83,63 @@ class bidController {
       return next(error);
     }
   }
-  async getBidOnProduct(req, res, next) {
-    const fields = Joi.object({
-      productId: Joi.string().hex().length(24).required(),
-      page: Joi.number().integer().min(1).default(1),
-      limit: Joi.number().integer().min(1).max(100).default(10),
-    });
+async getBidOnlot(req, res, next){
+  const fields = Joi.object({
+    lotId: Joi.string().hex().length(24).required(),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(10),
+  });
 
-    try {
-      const { error, value } = fields.validate(req.query);
-      if (error) {
-        console.error(error.details);
-        return res.json({ error: error.message });
-      }
-
-      const { productId, page, limit } = value;
-
-      const user = await findUserById(req.userId);
-      if (!user) {
-        return res.json(apiError.notFound(responseMessages.USER_NOT_FOUND));
-      }
-        const product = await checkProduct(productId);
-      
-      if (!product) {
-         return res.json(apiError.notFound(responseMessages.PRODUCT_NOT_FOUND));
-      }
- const currentTime = new Date();
-      if (
-        currentTime < product.startTime ||
-        currentTime > product.endTime ||
-        product.isSold
-      ) {
-         return res.json(apiError.notFound(responseMessages.BIDING_NOT_AVILABLE));
-      }
-      const result = await getBidsOnProduct(productId, req.userId, {
-        page,
-        limit,
-      });
-
-      return res.json(
-        new successResponse(
-          {
-            bids: result.bids,
-            pagination: {
-              total: result.total,
-              page: result.page,
-              limit: result.limit,
-              totalPages: result.totalPages,
-            },
-          },
-          responseMessages.BIDS_FETCHED
-        )
-      );
-    } catch (error) {
-      console.log("Error fetching bids:", error);
-      return next(error);
+  try {
+    const { error, value } = fields.validate(req.query);
+    if (error) {
+      console.error(error.details);
+      throw apiError.badRequest(error.message);
     }
+
+    const { lotId, page, limit } = value;
+
+    const user = await findUserById(req.userId);
+    if (!user) {
+      throw apiError.notFound(responseMessages.USER_NOT_FOUND);
+    }
+
+    const lot = await checklot(lotId);
+    if (!lot) {
+      throw apiError.notFound(responseMessages.LOT_NOT_FOUND);
+    }
+
+    const currentTime = new Date();
+    if (
+      currentTime < lot.startTime ||
+      currentTime > lot.endTime ||
+      lot.isSold
+    ) {
+      throw apiError.badRequest(responseMessages.BIDING_NOT_AVILABLE);
+    }
+
+    const result = await getBidsOnLot(lotId, req.userId, { page, limit });
+
+    return res.json(
+      new successResponse(
+        {
+          bids: result.bids,
+          pagination: {
+            total: result.total,
+            page: result.page,
+            limit: result.limit,
+            totalPages: result.totalPages,
+          },
+        },
+        responseMessages.BIDS_FETCHED
+      )
+    );
+  } catch (error) {
+    console.log("Error fetching bids:", error);
+    return next(error);
   }
-  async getSellerProductsWithLiveBids(req, res, next) {
+};
+  async getSellerLotsWithLiveBids(req, res, next) {
     const fields = Joi.object({
       buyerId: Joi.string().required(),
       page: Joi.number().integer().min(1).default(1),
@@ -147,32 +150,31 @@ class bidController {
       const { error, value } = fields.validate(req.query);
       if (error) {
         console.error(error.details);
-        return res.json({ error: error.message });
+         throw apiError.badRequest(error.message);
       }
       const { buyerId, page, limit } = value;
       const buyer = await findUserById(req.userId)
       if (!buyer) {
-        return res.json(apiError.notFound(responseMessages.USER_NOT_FOUND))
+        throw apiError.notFound(responseMessages.USER_NOT_FOUND);
       }
       let seller = null
       if (buyer.userType !== userType.ADMIN) {
 
         // For non-admins, verify seller status and ownership
         if (buyerId.toString() !== req.userId.toString()) {
-          
-          return res.json(apiError.unauthorized(responseMessages.CANT_SEE_PRODUCT))
+          throw apiError.unauthorized(responseMessages.CANT_SEE_LOT);
         }
         const requestingSeller = await findSellerByBuyerid(buyerId);
         if (!requestingSeller) {
-          return res.json(apiError.notFound(responseMessages.SELLER_NOT_FOUND))
+          throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
         }
         if (buyerId.toString() !== requestingSeller.buyerId._id.toString()) {
-          return res.json(apiError.unauthorized(responseMessages.CANT_SEE_PRODUCT))
+          throw apiError.unauthorized(responseMessages.CANT_SEE_LOT)
         }
         seller = requestingSeller._id
       }
 
-      const result = await getSellerProductsWithBids(
+      const result = await getSellerlotsWithBids(
         seller,
         req.userId,
         { page, limit }
@@ -181,7 +183,7 @@ class bidController {
       return res.json(
         new successResponse(
           {
-            products: result.products,
+            lots: result.lots,
             pagination: {
               total: result.total,
               page: result.page,
@@ -189,7 +191,7 @@ class bidController {
               totalPages: result.totalPages,
             },
           },
-          responseMessages.SELLER_PRODUCTS_WITH_BIDS_FETCHED
+          responseMessages.SELLER_LOT_WITH_BIDS_FETCHED
         )
       );
     } catch (error) {
@@ -197,7 +199,7 @@ class bidController {
       return next(error);
     }
   }
-  async getSellerProductsWithEndedBids(req, res, next) {
+  async getSellerLotsWithEndedBids(req, res, next) {
     const fields = Joi.object({
       buyerId: Joi.string().required(),
       page: Joi.number().integer().min(1).default(1),
@@ -208,7 +210,7 @@ class bidController {
       const { error, value } = fields.validate(req.query);
       if (error) {
         console.error(error.details);
-        return res.json({ error: error.message });
+        throw apiError.badRequest(error.message);
       }
       const { buyerId, page, limit } = value;
       const buyer = await findUserById(req.userId)
@@ -220,20 +222,20 @@ class bidController {
 
         // For non-admins, verify seller status and ownership
         if (buyerId.toString() !== req.userId.toString()) {
-          
-          return res.json(apiError.unauthorized(responseMessages.CANT_SEE_PRODUCT))
+
+          return res.json(apiError.unauthorized(responseMessages.CANT_SEE_LOT));
         }
         const requestingSeller = await findSellerByBuyerid(buyerId);
         if (!requestingSeller) {
           return res.json(apiError.notFound(responseMessages.SELLER_NOT_FOUND))
         }
         if (buyerId.toString() !== requestingSeller.buyerId._id.toString()) {
-          return res.json(apiError.unauthorized(responseMessages.CANT_SEE_PRODUCT))
+          return res.json(apiError.unauthorized(responseMessages.CANT_SEE_LOT))
         }
         seller = requestingSeller._id
       }
 
-      const result = await getSellerProductsWithEndBids(
+      const result = await getSellerlotsWithEndBids(
         seller,
         req.userId,
         { page, limit }
@@ -242,7 +244,7 @@ class bidController {
       return res.json(
         new successResponse(
           {
-            products: result.products,
+            lots: result.lots,
             pagination: {
               total: result.total,
               page: result.page,

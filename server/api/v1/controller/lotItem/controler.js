@@ -1,46 +1,187 @@
-import apiError from "../../../../helper/apiError";
+import apiError from "../../../../helper/apiError.js";
 import responseMessages from "../../../../../assets/responseMessages.js";
 import successResponse from "../../../../../assets/response.js";
+import lotServices from "../../services/lot.js";
 import Joi from "joi";
 import lotItemServices from "../../services/lotItem.js";
-const { createRequest, findLotItemById } = lotItemServices;
+const { createRequest, findLotItem, findByIdAndUpdate, findAndDelete } = lotItemServices;
+const{findLotById}  = lotServices;
 
 
 
 
-export class lotItemController{
- async createLotItem (req, res, next){
-    const fields = Joi.object({
-        productName: Joi.string().required(),
-        brandName: Joi.string().required(),
-        quantity: Joi.number().required(),
-        perUnitPrice: Joi.number().required(),
-        productImage: Joi.string().required(),
-    })
+export class lotItemController {
+async createLotItem(req, res, next) {
+  const fields = Joi.object({
+    lotId: Joi.string().required(),
+    brandName: Joi.string().required(),
+    quantity: Joi.number().required(),
+    perUnitPrice: Joi.number().required(),
+    sellerId: Joi.string().required(),
+    description: Joi.string().required(),
+  });
+
   try {
     const { error, value } = fields.validate(req.body);
     if (error) {
-      console.error(error.details);
-      return res.status(400).json({ error: error.message });
+      console.error("Validation error:", error.details);
+      throw apiError.badRequest(error.details[0].message);
+     
     }
-    if (!req.files || !req.files.lotImage || req.files.lotImage.length === 0) {
-      throw apiError.badRequest(responseMessages.LOT_ITEM_IMAGE_REQUIRED);
-    }
-    const { productName, brandName, quantity, perUnitPrice, productImage } = req.body;
 
-    const newItem = await createRequest({
-      productName,
+    const {
+      lotId,
       brandName,
       quantity,
       perUnitPrice,
-      productImage,
+      sellerId,
+      description
+    } = value;
+
+    const ifLotIdExists = await findLotById(lotId);
+    if (!ifLotIdExists) {
+      throw apiError.notFound(responseMessages.LOT_NOT_FOUND)
+    }
+
+    if (!req.files || !req.files.productImage || req.files.productImage.length === 0) {
+      throw apiError.badRequest(responseMessages.LOT_ITEM_IMAGE_REQUIRED);
+    }
+
+    const productImagePath = `/${req.files.productImage[0].filename}`;
+
+    const newItem = await createRequest({
+      lotId,
+      brandName,
+      quantity,
+      perUnitPrice,
+      sellerId,
+      description,
+      productImage: productImagePath,
     });
 
-    res.status(201).json({ success: true, message: "Lot item created", data: newItem });
+    return res.json(new successResponse(newItem, responseMessages.LOT_ITEM_CREATED));
   } catch (error) {
-    next(error);
+    console.log("Error in createLotItem:", error);
+    return next(error);
   }
-};
+}
+  async getAllLotItems(req, res, next) {
+    try {
+      const items = await findLotItem();
+      if (!items || items.length === 0) {
+        throw apiError.notFound(responseMessages.NOT_FOUND);
+      }
+      return res.json(new successResponse(items, responseMessages.DATA_FOUND));
+    } catch (error) {
+      console.error("Error in getAllLotItems:", error);
+      next(error);
+    }
+  };
+
+  async getLotItemById(req, res, next) {
+    const schema = Joi.object({
+      lotItemId: Joi.string().required(),
+    });
+
+    try {
+      const { lotItemId } = await schema.validateAsync(req.params);
+      const item = await findLotById(lotItemId);
+      if (!item) {
+     
+        throw apiError.notFound(responseMessages.NOT_FOUND);
+      }
+      return res.json(new successResponse(item, responseMessages.DATA_FOUND));
+    } catch (error) {
+      console.error("Error in getLotItemById:", error);
+      next(error);
+    }
+  }
+
+  async updateLotItem(req, res, next) {
+    try {
+      const updateObj = {
+        id: req.params.id,
+
+      };
+
+      const item = await findByIdAndUpdate(updateObj);;
+      if (!item) {
+        throw apiError.notFound(responseMessages.USER_NOT_FOUND);
+      }
+      return res.json(new successResponse(item, responseMessages.UPDATE_SUCCESS));
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  async deleteLotItem(req, res, next) {
+    try {
+      const item = await findAndDelete(req.params.id);
+      if (!item) {
+        return res.status(404).json(responseMessages.NOT_FOUND);
+      }
+      return res.json(new successResponse(item, responseMessages.DELETE_SUCCESS));
+    } catch (error) {
+      next(error);
+    }
+  };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }
 export default new lotItemController();

@@ -135,12 +135,12 @@ export class categoryController {
         throw apiError.notFound(responseMessages.CATEGORY_NOT_FOUND);
       }
 
-      const findProductRelatedCategory = await findProductAssosiatedWithCategory({ categoryId: categoryId })
-      console.log(findProductRelatedCategory);
+      // const findProductRelatedCategory = await findProductAssosiatedWithCategory({ categoryId: categoryId })
+      // console.log(findProductRelatedCategory);
 
-      if (findProductRelatedCategory.lengt >= 1) {
-        throw apiError.conflict(responseMessages.CATEGORY_HAS_PRODUCTS)
-      }
+      // if (findProductRelatedCategory.lengt >= 1) {
+      //   throw apiError.conflict(responseMessages.CATEGORY_HAS_PRODUCTS)
+      // }
       const result = await deleteCategory({ _id: categoryId });
       if (!result) {
         throw apiError.badRequest(responseMessages.CATEGORY_NOT_DELETE)

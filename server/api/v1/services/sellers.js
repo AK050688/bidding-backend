@@ -33,7 +33,7 @@ const sellerServices = {
         return await sellerModel.findOneAndUpdate(query, obj, { new: true });
     },
      findAllSeller:async (query) => {
-        return await sellerModel.find(query).select("name email  orgnizationName orgnizationType orgnizationPhone orgnizationEmail orgnizationWebsite subject");
+        return await sellerModel.find(query).select("name email  orgnizationName orgnizationType orgnizationPhone orgnizationEmail orgnizationWebsite subject statusOfApproval");
       },
     findAllRequest: async (query) => {
         return await sellerModel.find(query).populate({ path: "buyerId", select: "firstName lastName email mobileNumber addressLine city zip status userType" })
@@ -71,6 +71,9 @@ const sellerServices = {
     },
 findSellerDoc:async (query) => {
         return await sellerModel.find({statusOfApproval:statusOfApproval.ACCEPTED}).countDocuments()
-}
+},
+findSellerById:async(id) =>{
+    return await sellerModel.findById(id);
+  },
 }
 export default sellerServices;

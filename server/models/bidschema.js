@@ -5,9 +5,9 @@ import { statusOfApproval } from "../enums/statusOfApproval.js";
 mongoose.pluralize(null);
 
 const bids = new Schema({
-    productId: {
+    lotId: {
         type: mongoose.Types.ObjectId,
-       ref: "products",
+       ref: "lot",
         required: true,
     },
     buyerId: {
