@@ -10,8 +10,8 @@ import { status } from "../../../enums/status.js";
 export default {
 
     findAdmin: async (id) => {
-        const admin = await userModel.findOne({ $and: [{ _id: id }, { userType: userType.ADMIN }] });
-        return admin;
+        return await userModel.findOne({ $and: [{ _id: id }, { userType: userType.ADMIN }] });
+       
     },
   findUserById: async (id) => {
     return await userModel.findOne({ $and: [{ _id: id }, { status: { $ne: status.BLOCK } }] });

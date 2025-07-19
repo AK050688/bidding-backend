@@ -3,11 +3,13 @@ import mongoose from "mongoose";
 mongoose.pluralize(null);
 
 const lotItemSchema = new Schema({
-    productName: {
-        type: String,
+
+    lotId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "lot",
         required: true,
     },
-    brandName:{
+    brandName: {
         type: String,
         required: true,
     },
@@ -15,15 +17,28 @@ const lotItemSchema = new Schema({
         type: Number,
         required: true,
     },
-    perUnitPrice:{
+    perUnitPrice: {
         type: Number,
         required: true,
     },
-    productImage:{
+    sellerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "sellers",
+        required: true,
+    },
+    description: {
         type: String,
         required: true,
-    }
+    },
+    productImage: {
+        type: String,
+        required: true,
+    },
 
-})
+
+},
+    {
+        timestamps: true,
+    });
 
 export default model("lotItem", lotItemSchema);

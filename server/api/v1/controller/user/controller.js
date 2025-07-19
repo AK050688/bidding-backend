@@ -24,11 +24,10 @@ const {
   updateUser,
   findAllBuyers
 } = userServices;
-const{findBid,getLiveBidCount,getLiveBidCounts}=bidServices;
+const { findBid, getLiveBidCount, getLiveBidCounts } = bidServices;
 // const{allProductDocuments,findIsSoldProduct}=productServices;
-const { findSellerDoc } = sellerServices;
-const{countTransactionsByBuyerId,findTransactions}=transactionServices
-
+const { findSellerDoc, findSellerById } = sellerServices;
+const { countTransactionsByBuyerId, findTransactions } = transactionServices
 export class userController {
   async userSignup(req, res, next) {
     const schema = Joi.object({
@@ -261,6 +260,23 @@ export class userController {
         throw apiError.invalid(responseMessages.INVALID_PASSWORD);
       }
       const token = await commonFunction.getToken({ _id: userResult._id });
+      let seller_obejct
+      if (userResult.isSeller === true) {
+        const seller_data = await findSellerById(userResult._id)
+
+
+        seller_obejct = {
+          email: seller_data?.email,
+          orgnizationName: seller_data?.orgnizationName,
+          orgnizationType: seller_data?.orgnizationType,
+          orgnizationPhone: seller_data?.orgnizationPhone,
+          orgnizationEmail: seller_data?.orgnizationEmail,
+          orgnizationWebsite: seller_data?.orgnizationWebsite,
+          gstNumber: seller_data?.gstNumber,
+          statusOfApproval: seller_data?.statusOfApproval
+
+        }
+      }
       const sendResult = {
         _id: userResult._id,
         firstName: userResult.firstName,
@@ -271,6 +287,7 @@ export class userController {
         addressLine: userResult.addressLine,
         token: token,
         isSeller: userResult.isSeller,
+        seller_obejct
       };
       return res.json(
         new successResponse(sendResult, responseMessages.LOGIN_SUCCESS)
@@ -466,93 +483,76 @@ export class userController {
     }
   }
 
-  async getBuyerBidCount(req, res, next){
-  try {
-    const schema = Joi.object({
-      buyerId: Joi.string().required()
-    });
-      const { error, value } = schema.validate(req.body);
-    if (error) {
-      throw apiError.badRequest(error.details[0].message);
-    }
+  async getBuyerBidCount(req, res, next) {
+    try {
+      const schema = Joi.object({
+        buyerId: Joi.string().required()
+      });
+      const { error, value } = schema.validate(req.query);
+      if (error) {
+        throw apiError.badRequest(error.details[0].message);
+      }
 
-    const { buyerId } = value;
-    const buyer = await findUserById(buyerId);
-    console.log(buyer,"==============================buyer");
-    
-    
-    if(!buyer){
-      throw apiError.conflict(responseMessages.BUYER_ID_NOT_FOUND);
-    }
-    const bids = await findBid({buyerId})
-    const totalBids = bids.length;
+      const { buyerId } = value;
+      console.log("==============================buyer");
 
-    return res.json(
-      new successResponse(
-        { buyerId, totalBids,bids },
-        responseMessages.TOTAL_BIDS_PLACED
-      )
-    );
-  } catch (error) {
-    console.error("Error fetching buyer bid count:", error.message);
-    return next(error);
-  }
-}
-// async getTransactionCountByBuyer(req, res, next) {
-//   const schema = Joi.object({
-//     buyerId: Joi.string().required(),
-//   });
+      const buyer = await findUserById(buyerId);
 
-//   try {
-//     const { error, value } = schema.validate(req.body);
-//     if (error) throw apiError.badRequest(error.details[0].message);
 
-//     const { buyerId } = value;
+      if (!buyer) {
+        throw apiError.conflict(responseMessages.BUYER_ID_NOT_FOUND);
+      }
+      const bids = await findBid({ buyerId })
+      console.log(bids);
 
-//     const count = await countTransactionsByBuyerId(buyerId);
 
-//     return res.status(200).json(
-//       new successResponse({ count },responseMessages.TRANSACTION_FOUND)
-//     );
-//   } catch (error) {
-//     console.error("getTransactionCountByBuyer Error:", error);
-//     return next(error);
-//   }
-// }
 
-async getTransactionCountByBuyer(req, res, next) {
-  const schema = Joi.object({
-    buyerId: Joi.string().required(),
-  });
+      const totalBids = bids.length;
 
-  try {
-    const { error, value } = schema.validate(req.params); 
-    if (error) throw apiError.badRequest(error.details[0].message);
-
-    const { buyerId } = value;
-
-    const count = await countTransactionsByBuyerId(buyerId);
-    if (count === 0) {
-      return res.status(404).json(
-        new apiError.notFound(responseMessages.BUYER_ID_NOT_FOUND)
+      return res.json(
+        new successResponse(
+          { buyerId, totalBids, bids },
+          responseMessages.TOTAL_BIDS_PLACED
+        )
       );
+    } catch (error) {
+      console.error("Error fetching buyer bid count:", error.message);
+      return next(error);
     }
-    const transactions = await findTransactions({ buyerId }); 
-
-    return res.status(200).json(
-      new successResponse(
-        {
-          count,
-          transactions,
-        },
-        "Buyer transaction count with status  successfully"
-      )
-    );
-  } catch (error) {
-    console.error("getTransactionCountByBuyer Error:", error);
-    return next(error);
   }
-}
+  async getTransactionCountByBuyer(req, res, next) {
+    const schema = Joi.object({
+      buyerId: Joi.string().required(),
+    });
+
+    try {
+      const { error, value } = schema.validate(req.params);
+      if (error) throw apiError.badRequest(error.details[0].message);
+
+      const { buyerId } = value;
+
+      const count = await countTransactionsByBuyerId(buyerId);
+      if (count === 0) {
+        return res.status(404).json(
+          new apiError.notFound(responseMessages.BUYER_ID_NOT_FOUND)
+        );
+      }
+      const transactions = await findTransactions({ buyerId });
+
+      return res.status(200).json(
+        new successResponse(
+          {
+            count,
+            transactions,
+          },
+          "Buyer transaction count with status  successfully"
+        )
+      );
+    } catch (error) {
+      console.error("getTransactionCountByBuyer Error:", error);
+      return next(error);
+    }
+  }
 
 
 

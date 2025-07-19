@@ -9,6 +9,7 @@ import commonFunction from "../../../../helper/utils.js";
 import userServices from "../../services/user.js";
 import sellerServices from "../../services/sellers.js";
 import bidService from "../../services/bid.js";
+import lotServices from "../../services/lot.js";
 // import productService from "../../services/product.js";
 import bcrypt from "bcrypt";
 import Joi from "joi";
@@ -16,6 +17,7 @@ const { updateUserById, findAdmin, paginate, findUserById, findAdminv2, countUse
 const { findSellerById, updateSellerById, findAllRequest, findSellerByBuyerid, countSeller, findSellerDoc,findAllSeller } = sellerServices;
 // const { allProductDocuments, findIsSoldProduct, } = productService;
 const { getLiveBidCounts } = bidService;
+const { findSoldLots ,findAllLotDocuments} = lotServices;
 const{findTransaction,findAndUpdate,findTransactionByOrderId}=transactionServices;
 
 class adminController {
@@ -225,9 +227,7 @@ class adminController {
       const { buyerId, statusOfApproval } = validate
       const isAdmin = await findAdminv2(req.userId);
       if (!isAdmin) {
-        return res.json(
-          apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
-        );
+        throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
 
       }
       const buyer = await findUserById(buyerId)
@@ -278,18 +278,18 @@ class adminController {
   }
   async getSpecificRequest(req, res, next) {
     const fields = Joi.object({
-      requestId: Joi.string().required(),
+      buyerId: Joi.string().required(),
     })
     try {
       const validate = await fields.validateAsync(req.params);
-      const { requestId } = validate
+      const { buyerId } = validate
       const isAdmin = await findAdminv2(req.userId);
       if (!isAdmin) {
         return res.json(
           apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
         );
       }
-      const updateStatus = await findSellerById(requestId)
+      const updateStatus = await findSellerById(buyerId)
       return res.json(new successResponse(updateStatus, responseMessages.SUCCESS))
     } catch (error) {
       console.log("error..", error);
@@ -381,8 +381,8 @@ class adminController {
       if (!admin) {
         throw apiError.notFound(responseMessages.USER_NOT_FOUND);
       }
-      const totalproduct = await allProductDocuments();
-      const isSoldProduct = await findIsSoldProduct({ isSold: true });
+      const totalLot = await findAllLotDocuments();
+      const isSoldLot = await findSoldLots({ isSold: true });
       const totalBuyer = await findAll({ userType: userType.BUYER });
       const totalSellers = await findSellerDoc();
       const totalLiveBids = await getLiveBidCounts();
@@ -391,8 +391,8 @@ class adminController {
       return res.json(
         new successResponse(
           {
-            totalproduct: totalproduct,
-            isSoldProduct: isSoldProduct,
+            totalLot: totalLot,
+            isSoldLot: isSoldLot,
             totalBuyers: totalBuyer,
             totalSellers: totalSellers,
             totalLiveBids: totalLiveBids,
@@ -411,7 +411,7 @@ class adminController {
       if (!admin) {
         throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
       }
-      const buyers = await findAllBuyers();
+      const buyers = await findAllBuyers({ userType: "BUYER" });
       return res.json(
         new successResponse(buyers, responseMessages.BUYERS_FETCHED)
       );

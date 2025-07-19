@@ -1,43 +1,74 @@
-import lotModel from "../../../models/lotSchema";
+import lotModel from "../../../models/lot.js";
 
 const lotServices = {
-  findTransaction: async (transactionId) => {
-    return await lotModel.find().populate("buyerId sellerId productId bidId")
+  findlot: async (lot) => {
+    return await lotModel.find(lot)
 
   },
-  findAndUpdate: async (transactionId, updateObj) => {
-    return await lotModel.findOneAndUpdate(
-      { transactionId },
-      { paymentStatus: newStatus },
-      { new: true }
-    )
-  },
-  createRequest: async (insertObj) => {
+  createlot: async (insertObj) => {
     return await lotModel.create(insertObj);
   },
-  findTransactionByOrderId: async (orderId) => {
+  findAllLot: async () => {
     return await lotModel.findOne({ transactionId: orderId });
   },
-  updateTransactionByOrderId: async (orderId, updateObj) => {
-    return await lotModel.findOneAndUpdate(
-      { transactionId: orderId },
-      { $set: updateObj },
-      { new: true }
-    );
+  findLotByFilter: async (filter) => {
+    return await lotModel.find(filter).populate("categoryId", "categoryName")
+      .populate("sellerId", "name email")
+      .populate("lotItemId")
+      .sort({ createdAt: -1 });
   },
-  countTransactionsByBuyerId: async (buyerId) => {
-    return await lotModel.countDocuments({ buyerId });
+  findLotById: async (id) => {
+    return await lotModel.findById(id)
+      .populate("categoryId")
+      .populate("sellerId")
+      .populate("winnerId")
+      .populate("lotItemId")
+      .populate("bidId")
   },
- findTransactions: async (query) => {
-  return await lotModel
-    .find(query)
-    .select("paymentStatus buyerId")
-    .populate({ path: "buyerId", select: "name" });
+  updateLotById: async (id, updateData) => {
+    return await lotModel.findByIdAndUpdate(id, updateData, { new: true });
+  },
+  findLotById: async (id) => {
+    return await lotModel.findById(id);
+  },
+  findActiveLots: async () => {
+    const now = new Date();
+    return await lotModel.find({
+      isSold: false,
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    });
+  },
+  findExpiredLots: async () => {
+    const now = new Date();
+
+    return await lotModel.find({
+      endDate: { $lt: now },
+      isSold: false,
+    })
+      .populate("sellerId", "name email")
+      .populate("categoryId", "categoryName")
+      .populate("lotItemId");
+  },
+  findlots: async (filter) => {
+    return await lotModel.find(filter).populate("sellerId").populate("categoryId");
+  },
+  findSoldLots: async () => {
+    return await lotModel.find({ isSold: true }).countDocuments();
+     
+  },
+  findAllLotDocuments: async () => {
+    const lot = await lotModel.find().countDocuments()
+    return lot;
+
+  },
+  findById:async()=>{
+    return await lotModel.findById();
+  },
+ 
+
+
+
 }
 
-
-
-
-}
-  
 export default lotServices;

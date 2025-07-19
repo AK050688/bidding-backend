@@ -20,7 +20,6 @@ const userServices = {
     return await userModel.findOne({ $and: [{ email: email }, { status: { $ne: status.DELETE } }] });
   },
   findUserById: async (id) => {
-    console.log(id,">>>>>>>>>>>");
     
     return await userModel.findOne({ $and: [{ _id: id }, { status: { $ne: status.DELETE } }] });
   },
@@ -34,7 +33,7 @@ const userServices = {
     return await userModel.find().countDocuments();
   },
   findAllBuyers:async (query) => {
-    return await userModel.find(query).select("firstName lastName email mobileNumber addressLine city zip status ");
+    return await userModel.find(query).select("firstName lastName email mobileNumber addressLine city zip status isSeller userType");
   },
   findAdmin: async (query) => {
     return await userModel.findOne(query);

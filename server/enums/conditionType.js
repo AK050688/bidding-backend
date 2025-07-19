@@ -5,5 +5,6 @@ export const conditionType = Object.freeze({
   GOOD: "GOOD",
   ACCEPTABLE:"ACCEPTABLE",
   DEFECTIVE:"DEFECTIVE",
-  NOT_TESTED:"NOT TESTED"
+  NOT_TESTED:"NOT TESTED",
+  TESTED:"TESTED"
 });

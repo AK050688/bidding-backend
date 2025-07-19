@@ -1,39 +1,34 @@
-import lotItemModel from "../../../models/lotItem";
+import lotItemModel from "../../../models/lotItem.js";
 
 const lotItemServices = {
-  findTransaction: async (transactionId) => {
-    return await lotItemModel.find().populate("buyerId sellerId productId bidId")
+  findLotItem: async (transactionId) => {
+    return await lotItemModel.find();
 
   },
-  findAndUpdate: async (transactionId, updateObj) => {
-    return await lotItemModel.findOneAndUpdate(
-      { transactionId },
-      { paymentStatus: newStatus },
-      { new: true }
-    )
+
+  createRequest: async (data) => {
+    return await lotItemModel.create(data);
   },
-  createRequest: async (insertObj) => {
-    return await lotItemModel.create(insertObj);
-  },
-  findTransactionByOrderId: async (orderId) => {
-    return await lotItemModel.findOne({ transactionId: orderId });
-  },
-  updateTransactionByOrderId: async (orderId, updateObj) => {
-    return await lotItemModel.findOneAndUpdate(
-      { transactionId: orderId },
-      { $set: updateObj },
-      { new: true }
-    );
-  },
-  countTransactionsByBuyerId: async (buyerId) => {
-    return await lotItemModel.countDocuments({ buyerId });
-  },
- findTransactions: async (query) => {
-  return await lotItemModel
-    .find(query)
-    .select("paymentStatus buyerId")
-    .populate({ path: "buyerId", select: "name" });
-}
+ findLotById: async (id) => {
+  return await lotItemModel.findById(id); 
+},
+findByIdAndUpdate: async (insertObj) => {
+  const { id, ...updateData } = insertObj;
+  return await lotItemModel.findByIdAndUpdate(id, updateData, { new: true });
+},
+findAndDelete: async (id) => {
+  return await lotItemModel.findByIdAndDelete(id);
+},
+findExistingBrand:async ({ lotId, sellerId, brandName }) => {
+  return await lotItemModel.findOne({
+    lotId,
+    sellerId,
+    brandName,
+  })
+},
+
+
+
 
 
 
