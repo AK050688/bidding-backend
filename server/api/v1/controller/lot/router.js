@@ -17,7 +17,7 @@ export default Express.Router()
         // auth.verifyToken,
         controller.createLot.bind(controller)
     )
-    .get("/getAllLots",auth.verifyToken, controller.getAllLots)
+    .get("/getAllLots", controller.getAllLots)
     .get("/getLotById/lotId/:id", auth.verifyToken, controller.getLotById)
     .put("/updateLot/:id", auth.verifyToken, controller.updateLot)
     .get("/getActiveLots", auth.verifyToken, controller.getActiveLots)

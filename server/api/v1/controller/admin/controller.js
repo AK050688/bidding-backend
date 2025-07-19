@@ -227,9 +227,7 @@ class adminController {
       const { buyerId, statusOfApproval } = validate
       const isAdmin = await findAdminv2(req.userId);
       if (!isAdmin) {
-        return res.json(
-          apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
-        );
+        throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
 
       }
       const buyer = await findUserById(buyerId)
@@ -280,18 +278,18 @@ class adminController {
   }
   async getSpecificRequest(req, res, next) {
     const fields = Joi.object({
-      requestId: Joi.string().required(),
+      buyerId: Joi.string().required(),
     })
     try {
       const validate = await fields.validateAsync(req.params);
-      const { requestId } = validate
+      const { buyerId } = validate
       const isAdmin = await findAdminv2(req.userId);
       if (!isAdmin) {
         return res.json(
           apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
         );
       }
-      const updateStatus = await findSellerById(requestId)
+      const updateStatus = await findSellerById(buyerId)
       return res.json(new successResponse(updateStatus, responseMessages.SUCCESS))
     } catch (error) {
       console.log("error..", error);

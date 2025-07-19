@@ -13,7 +13,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import fs from "fs"
-const { checkForRequest, createRequest, findAllRequest, findSellerById, findSellerByIds ,findAllSeller} = sellerServices
+const { checkForRequest, createRequest, findAllRequest, findSellerById ,findAllSeller} = sellerServices
 const { findUserById } = userServices;
 export class sellerController {
 
@@ -106,7 +106,7 @@ export class sellerController {
                 throw apiError.badRequest("Invalid document type.");
             }
 
-            const seller = await findSellerByIds(requestId);
+            const seller = await findSellerById(requestId);
             if (!seller) {
                 throw apiError.notFound("Document or seller request not found.");
             }
@@ -163,22 +163,23 @@ export class sellerController {
         });
 
         try {
-            const { buyerId } = await schema.validateAsync(req.body);
+            const { buyerId } = await schema.validateAsync(req.params);
             const buyer = await findUserById(buyerId);
             if (!buyer) {
                 return next(apiError.notFound(responseMessages.BUYER_ID_NOT_FOUND));
             }
             const sellerRequest = await findSellerById(buyerId);
+            // console.log(sellerRequest,"======================");
+            
 
             if (!sellerRequest) {
                 return next(apiError.notFound(responseMessages.SELLER_REQUEST_NOT_FOUND));
             }
-
             // You can combine both buyer & seller data if needed
             return res.json(new successResponse(sellerRequest, responseMessages.DATA_FOUND));
 
         } catch (error) {
-            console.log("Error in getRequestByUser:", error);
+            console.log("Error in getRequestByUser:", error);   
             return next(error);
         }
     }

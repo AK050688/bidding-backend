@@ -12,9 +12,11 @@ import lotItemService from "../../services/lotItem.js"
 import Joi from "joi";
 import lot from "../../services/lot.js";
 import sellerServices from "../../services/sellers.js";
+import lotItemServices from "../../services/lotItem.js";
 const { createlot, findlot, findAllLot, findLotByFilter, findLotById, updateLotById, findActiveLots, findExpiredLots, findlots, findById } = lot;
-const { findSellerById } = sellerServices;
+const { sellerFindById } = sellerServices;
 const { findAdmin } = userServices;
+const { createRequest,findOnlySingleLot } = lotItemServices
 
 
 
@@ -45,7 +47,7 @@ export class lotController {
             if (error) {
                 throw apiError.badRequest(error.details[0].message);
             }
-            const seller = await findSellerById(value.sellerId);
+            const seller = await sellerFindById(value.sellerId);
             if (!seller) {
 
                 throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
@@ -59,17 +61,7 @@ export class lotController {
                     (file) => `/${file.filename}`
                 );
             }
-            if (!value.lotItemId || value.lotItemId.length === 0) {
-                const lotItemPayload = {
-                    brandName: value.totalBrand,
-                    quantity: 1,
-                    perUnitPrice: value.totalPrice,
-                    sellerId: value.sellerId,
-                    description: value.description
-                };
 
-               controller.createLotItem(lotItemPayload);
-            }
 
 
             const {
@@ -88,11 +80,11 @@ export class lotController {
                 description,
             } = value;
 
-            const newItem = await createlot({
+            const newLot = await createlot({
                 productName,
                 totalBrand,
                 lotImage,
-                lotItemId,
+                lotItemId: [],
                 sellerId,
                 categoryId,
                 floorPrice,
@@ -106,9 +98,39 @@ export class lotController {
                 lotImage: lotImage,
             });
 
-            console.log("Created Lot:", newItem);
 
-            return res.json(new successResponse(newItem, responseMessages.LOT_CREATED));
+            const existingLotItem = await findOnlySingleLot({
+                lotId: newLot._id,
+                sellerId,
+                brandName: { $regex: `^${brandName}$`, $options: "i" }, 
+            });
+
+            if (existingLotItem) {
+                throw apiError.badRequest("This brand already exists for this lot.");
+            }
+
+            // Step 3: Create one lot item
+            const newLotItem = await createRequest({
+                lotId: newLot._id,
+                brandName,
+                quantity,
+                perUnitPrice,
+                sellerId,
+                description: description || "No description provided",
+                productImage: lotImage.length > 0 ? lotImage[0] : "/default.jpg",
+            });
+
+            // Step 4: Push that lotItemId into lot
+            await updateLotById(newLot._id, {
+                $set: { lotItemId: [newLotItem._id] },
+            });
+
+            return res.json(
+                new successResponse(
+                    { lot: newLot, lotItem: newLotItem },
+                    responseMessages.LOT_CREATED
+                )
+            );
         } catch (error) {
             console.error("Error in createLot:", error);
             next(error);

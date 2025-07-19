@@ -11,7 +11,7 @@ import responseMessages from "../../../../../assets/responseMessages.js";
 import { paymentStatus } from "../../../../enums/paymentStatus.js";
 import successResponse from "../../../../../assets/response.js";
 const { findUserById } = userServices;
-const { findSellerByIds } = sellerServices;
+const { findByIds } = sellerServices;
 const { createRequest, findTransactionByOrderId, updateTransactionByOrderId } = transactionServices;
 
 const razorpay = new Razorpay({
@@ -47,7 +47,7 @@ class transactionController {
       const { amount, buyerId, sellerId, productId, bidId, paymentMethod } = validatedBody;
 
       const buyer = await findUserById(buyerId);
-      const seller = await findSellerByIds(sellerId);
+      const seller = await findByIds(sellerId);
       if (!buyer || !seller) {
         throw apiError.notFound(responseMessages.BUYER_AND_SELLER_NOT_FOUND);
       }

@@ -296,19 +296,19 @@ const bitServices = {
   },
   getLiveBidCounts: async () => {
     const currentTime = new Date();
-
+ 
     // Find all bids with their product populated
     const bids = await bidModel.find()
 
     let liveBidCount = 0;
 
     for (const bid of bids) {
-      const product = bid.productId;
+      const lot = bid.lotId;
 
       // Check if product is live and not sold
       if (
-        currentTime >= product.startTime &&
-        currentTime <= product.endTime &&
+        currentTime >= lot.startTime &&
+        currentTime <= lot.endTime &&
         !product.isSold
       ) {
         liveBidCount++;

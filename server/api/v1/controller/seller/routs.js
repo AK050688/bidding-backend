@@ -16,7 +16,7 @@ export default Express.Router()
     { name: "aadhar_Image", maxCount: 1 },
     { name: "gstDoc_Image", maxCount: 1 },
   ]),auth.verifyToken,controller.requestForSeller)
- .get("/getRequestByUser", controller.getRequestByUser)
+ .get("/getRequestByUser/:buyerId", controller.getRequestByUser)
  .get(
   "/downloadDocument/:requestId/:docType",
   auth.verifyToken,

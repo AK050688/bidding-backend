@@ -6,8 +6,8 @@ const lotItemServices = {
 
   },
 
-  createRequest: async (insertObj) => {
-    return await lotItemModel.create(insertObj);
+  createRequest: async (data) => {
+    return await lotItemModel.create(data);
   },
  findLotById: async (id) => {
   return await lotItemModel.findById(id); 
@@ -18,6 +18,13 @@ findByIdAndUpdate: async (insertObj) => {
 },
 findAndDelete: async (id) => {
   return await lotItemModel.findByIdAndDelete(id);
+},
+findExistingBrand:async ({ lotId, sellerId, brandName }) => {
+  return await lotItemModel.findOne({
+    lotId,
+    sellerId,
+    brandName,
+  })
 },
 
 

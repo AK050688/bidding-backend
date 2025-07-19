@@ -64,7 +64,9 @@ const lotServices = {
   },
   findById:async()=>{
     return await lotModel.findById();
-  }
+  },
+ 
+
 
 
 }

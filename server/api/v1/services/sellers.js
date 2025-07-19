@@ -14,17 +14,17 @@ const sellerServices = {
     createRequest: async (insertObj) => {
         return await sellerModel.create(insertObj);
     },
-    countSeller:async(insertObj)=>{
-      return await sellerModel.countDocuments(insertObj);
+    countSeller: async (insertObj) => {
+        return await sellerModel.countDocuments(insertObj);
     },
     findUserById: async (id) => {
         return await userModel.findOne({ $and: [{ _id: id }, { status: { $ne: status.BLOCK } }] });
     },
-    findSellerByIds: async (id) => {
+    findByIds: async (id) => {
         return await sellerModel.findOne({ $and: [{_id: id }, { statusOfApproval: { $ne: statusOfApproval.REJECTED } }] }).populate({ path: "buyerId", select: "firstName lastName email mobileNumber addressLine city zip status userType" });
     },                                                                                             
-     findSellerById: async (id) => {
-        return await sellerModel.findOne({ $and: [{buyerId: id }, { statusOfApproval: { $ne: statusOfApproval.REJECTED } }] }).populate({ path: "buyerId", select: "firstName lastName email mobileNumber addressLine city zip status userType" });
+    findSellerById: async (id) => {
+        return await sellerModel.findOne({ $and: [{ buyerId: id }, { statusOfApproval: { $ne: statusOfApproval.REJECTED } }] }).populate({ path: "buyerId", select: "firstName lastName email mobileNumber addressLine city zip status userType" });
     },
     updateSellerById: async (id, obj) => {
         return await sellerModel.findByIdAndUpdate({ _id: id }, obj, { new: true });
@@ -32,9 +32,9 @@ const sellerServices = {
     updateUser: async (query, obj) => {
         return await sellerModel.findOneAndUpdate(query, obj, { new: true });
     },
-     findAllSeller:async (query) => {
+    findAllSeller: async (query) => {
         return await sellerModel.find(query).select("name email  orgnizationName orgnizationType orgnizationPhone orgnizationEmail orgnizationWebsite subject statusOfApproval");
-      },
+    },
     findAllRequest: async (query) => {
         return await sellerModel.find(query).populate({ path: "buyerId", select: "firstName lastName email mobileNumber addressLine city zip status userType" })
     },
@@ -66,14 +66,14 @@ const sellerServices = {
         return sendData
 
     },
-    findSellerByBuyerid:async (id) => {
-        return await sellerModel.findOne({ $and: [{buyerId: id }, { statusOfApproval: { $ne: statusOfApproval.REJECTED } }] }).populate({ path: "buyerId", select: "firstName lastName email mobileNumber addressLine city zip status userType" });
+    findSellerByBuyerid: async (id) => {
+        return await sellerModel.findOne({ $and: [{ buyerId: id }, { statusOfApproval: { $ne: statusOfApproval.REJECTED } }] }).populate({ path: "buyerId", select: "firstName lastName email mobileNumber addressLine city zip status userType" });
     },
-findSellerDoc:async (query) => {
-        return await sellerModel.find({statusOfApproval:statusOfApproval.ACCEPTED}).countDocuments()
-},
-findSellerById:async(id) =>{
-    return await sellerModel.findById(id);
-  },
+    findSellerDoc: async (query) => {
+        return await sellerModel.find({ statusOfApproval: statusOfApproval.ACCEPTED }).countDocuments()
+    },
+    sellerFindById: async (id) => {
+        return await sellerModel.findById(id);
+    },
 }
 export default sellerServices;
