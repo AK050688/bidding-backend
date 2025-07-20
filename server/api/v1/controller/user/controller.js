@@ -285,9 +285,15 @@ export class userController {
         email: userResult.email,
         mobileNumber: userResult.mobileNumber,
         addressLine: userResult.addressLine,
+        city:userResult.city ,
+        state:userResult.state    ,
+        zipCode:userResult.zipCode   ,
+        countryCode:userResult.countryCode    ,
+        dateOfBirth:userResult.dateOfBirth    ,
         token: token,
         isSeller: userResult.isSeller,
-        seller_obejct
+        seller_obejct,
+
       };
       return res.json(
         new successResponse(sendResult, responseMessages.LOGIN_SUCCESS)

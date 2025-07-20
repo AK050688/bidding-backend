@@ -18,6 +18,7 @@ export default Express.Router()
     .get("/getAllSeller",auth.verifyToken,controller.getAllSeller)
     .get("/getAllTransactions", auth.verifyToken, controller.getAllTransactions)
     .get("/getTransactionByOrderId/:orderId", auth.verifyToken, controller.getTransactionByOrderId)
+    .post("/lotAcceptByAdminRequest",auth.verifyToken, controller.lotAcceptByAdminRequest);
 
    
 

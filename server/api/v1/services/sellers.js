@@ -67,7 +67,7 @@ const sellerServices = {
 
     },
     findSellerByBuyerid: async (id) => {
-        return await sellerModel.findOne({ $and: [{ buyerId: id }, { statusOfApproval: { $ne: statusOfApproval.REJECTED } }] }).populate({ path: "buyerId", select: "firstName lastName email mobileNumber addressLine city zip status userType" });
+        return await sellerModel.findOne({ $and: [{ buyerId: id }, { statusOfApproval: { $ne: statusOfApproval.BLOCK } }] }).populate({ path: "buyerId", select: "firstName lastName email mobileNumber addressLine city zip status userType" });
     },
     findSellerDoc: async (query) => {
         return await sellerModel.find({ statusOfApproval: statusOfApproval.ACCEPTED }).countDocuments()

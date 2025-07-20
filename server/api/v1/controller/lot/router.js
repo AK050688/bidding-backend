@@ -15,7 +15,7 @@ export default Express.Router()
         ".webp",
         ]).fields([{ name: "lotImage", maxCount: 5 }]),
         // auth.verifyToken,
-        controller.createLot.bind(controller)
+        controller.createLot
     )
     .get("/getAllLots", controller.getAllLots)
     .get("/getLotById/lotId/:id", auth.verifyToken, controller.getLotById)

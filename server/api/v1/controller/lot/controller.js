@@ -16,126 +16,123 @@ import lotItemServices from "../../services/lotItem.js";
 const { createlot, findlot, findAllLot, findLotByFilter, findLotById, updateLotById, findActiveLots, findExpiredLots, findlots, findById } = lot;
 const { sellerFindById } = sellerServices;
 const { findAdmin } = userServices;
-const { createRequest,findOnlySingleLot } = lotItemServices
+const { createRequest, findOnlySingleLot } = lotItemServices
 
 
 
 
 
 export class lotController {
-    async createLot(req, res, next) {
-        const schema = Joi.object({
-            sellerId: Joi.string().required(),
-            productName: Joi.string().required(),
-            totalBrand: Joi.string().required(),
-            lotItemId: Joi.array().items(Joi.string()).optional(),
-            categoryId: Joi.string().required(),
-            floorPrice: Joi.number().required(),
-            totalPrice: Joi.number().required(),
-            maxBidAmount: Joi.number().required(),
-            startDate: Joi.date().required(),
-            endDate: Joi.date().required(),
-            conditionType: Joi.string()
-                .valid(...Object.values(conditionType))
-                .required(),
-            location: Joi.string().required(),
-            description: Joi.string().optional(),
+
+async createLot(req, res, next) {
+    const schema = Joi.object({
+        sellerId: Joi.string().required(),
+        productName: Joi.string().required(),
+        totalBrand: Joi.string().required(),
+        categoryId: Joi.string().required(),
+        floorPrice: Joi.number().required(),
+        lotQuantity: Joi.number().required(),
+        totalPrice: Joi.number().required(),
+        maxBidAmount: Joi.number().required(),
+        startDate: Joi.date().required(),
+        endDate: Joi.date().required(),
+        conditionType: Joi.string()
+            .valid(...Object.values(conditionType))
+            .required(),
+        location: Joi.string().required(),
+        description: Joi.string().optional(),
+        // Lot Item fields
+        brandName: Joi.string().required(),
+        quantity: Joi.number().required(),
+        perUnitPrice: Joi.number().required(),
+    });
+
+    try {
+        const { error, value } = schema.validate(req.body);
+        if (error) {
+            throw apiError.badRequest(error.details[0].message);
+        }
+
+        const seller = await sellerFindById(value.sellerId);
+        if (!seller) {
+            throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
+        }
+
+        let lotImage = [];
+        if (req.files && req.files.lotImage && req.files.lotImage.length > 0) {
+            lotImage = req.files.lotImage.map((file) => `/${file.filename}`);
+        }
+
+        const {
+            productName,
+            totalBrand,
+            sellerId,
+            categoryId,
+            floorPrice,
+            totalPrice,
+            lotQuantity,
+            maxBidAmount,
+            startDate,
+            endDate,
+            conditionType,
+            location,
+            description,
+            brandName,
+            quantity,
+            perUnitPrice,
+        } = value;
+
+        // 1. First create the Lot document
+        const newLot = await createlot({
+            productName,
+            totalBrand,
+            lotImage,
+            lotItemId: [], // Initialize as empty array
+            sellerId,
+            categoryId,
+            floorPrice,
+            totalPrice,
+            maxBidAmount,
+            lotQuantity,
+            startDate,
+            endDate,
+            conditionType,
+            location,
+            description,
         });
 
-        try {
-            const { error, value } = schema.validate(req.body);
-            if (error) {
-                throw apiError.badRequest(error.details[0].message);
-            }
-            const seller = await sellerFindById(value.sellerId);
-            if (!seller) {
+        // 2. Create the Lot Item with reference to the Lot
+        const newLotItem = await createRequest({
+            lotId: newLot._id, // Reference to the parent Lot
+            brandName,
+            quantity,
+            perUnitPrice,
+            sellerId,
+            description: description || "No description provided",
+            productImage: lotImage.length > 0 ? lotImage[0] : "/default.jpg",
+        });
 
-                throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
-            }
+        // 3. Update the Lot to include the Lot Item reference
+        await updateLotById(newLot._id, {
+            $push: { lotItemId: newLotItem._id }
+        });
+        const updatedLot = await findLotById(newLot._id);
 
-            let lotImage = [];
+        return res.json(
+            new successResponse(
+                { 
+                    lot: updatedLot, 
+                    lotItem: newLotItem 
+                },
+                responseMessages.LOT_CREATED
+            )
+        );
 
-
-            if (req.files && req.files.lotImage && req.files.lotImage.length > 0) {
-                lotImage = req.files.lotImage.map(
-                    (file) => `/${file.filename}`
-                );
-            }
-
-
-
-            const {
-                productName,
-                totalBrand,
-                lotItemId,
-                sellerId,
-                categoryId,
-                floorPrice,
-                totalPrice,
-                maxBidAmount,
-                startDate,
-                endDate,
-                conditionType,
-                location,
-                description,
-            } = value;
-
-            const newLot = await createlot({
-                productName,
-                totalBrand,
-                lotImage,
-                lotItemId: [],
-                sellerId,
-                categoryId,
-                floorPrice,
-                totalPrice,
-                maxBidAmount,
-                startDate,
-                endDate,
-                conditionType,
-                location,
-                description,
-                lotImage: lotImage,
-            });
-
-
-            const existingLotItem = await findOnlySingleLot({
-                lotId: newLot._id,
-                sellerId,
-                brandName: { $regex: `^${brandName}$`, $options: "i" }, 
-            });
-
-            if (existingLotItem) {
-                throw apiError.badRequest("This brand already exists for this lot.");
-            }
-
-            // Step 3: Create one lot item
-            const newLotItem = await createRequest({
-                lotId: newLot._id,
-                brandName,
-                quantity,
-                perUnitPrice,
-                sellerId,
-                description: description || "No description provided",
-                productImage: lotImage.length > 0 ? lotImage[0] : "/default.jpg",
-            });
-
-            // Step 4: Push that lotItemId into lot
-            await updateLotById(newLot._id, {
-                $set: { lotItemId: [newLotItem._id] },
-            });
-
-            return res.json(
-                new successResponse(
-                    { lot: newLot, lotItem: newLotItem },
-                    responseMessages.LOT_CREATED
-                )
-            );
-        } catch (error) {
-            console.error("Error in createLot:", error);
-            next(error);
-        }
+    } catch (error) {
+        console.error("Error in createLot:", error);
+        next(error);
     }
+}
     async getAllLots(req, res, next) {
         try {
             const { status, conditionType, categoryId } = req.query;
