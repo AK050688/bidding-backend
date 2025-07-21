@@ -1,6 +1,7 @@
 import { model, Schema } from "mongoose";
 import mongoose from "mongoose";
 import { conditionType } from "../enums/conditionType.js";
+import { lotStatus } from "../enums/lotStatus.js";
 mongoose.pluralize(null);
 
 const lotSchema = new Schema(
@@ -9,7 +10,7 @@ const lotSchema = new Schema(
             type: String,
             required: true,
         },
-        totalBrand:{
+        totalBrand: {
             type: String,
             required: true,
         },
@@ -43,10 +44,14 @@ const lotSchema = new Schema(
             type: Number,
             required: true,
         },
-        maxBidAmount:{
-            type:Number,
-            require:true,
+        maxBidAmount: {
+            type: Number,
+            require: true,
 
+        },
+        lotQuantity: {
+            type: Number,
+            required: true,
         },
         conditionType: {
             type: String,
@@ -77,6 +82,11 @@ const lotSchema = new Schema(
             type: Boolean,
             default: false,
         },
+        lotStatus: {
+            type: String,
+            enum:[...Object.values(lotStatus)],
+            default:lotStatus.PENDING
+        }
     },
     {
         timestamps: true,

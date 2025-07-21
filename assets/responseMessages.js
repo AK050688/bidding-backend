@@ -52,6 +52,9 @@ export default {
 	SELLER_LOT_WITH_BIDS_FETCHED: "Seller lot data fetches",
 	LOT_SOLD: "This lot is already sold.",
 	SELLER_CAN_NOT_ALLOWED_TO_BID_OWN_LOT: "Sellers are not allowed to bid on their own lot.",
+	LOT_ACCEPT: "Lot is already accepted.",
+	LOT_REJECT: "Lot was already rejected.",
+	LOT_ACCEPT_BY_ADMIN: "Lot has been accepted by admin successfully.",
 
 
 	REQUEST_ALREADY_EXIST: 'Request already exist.',
