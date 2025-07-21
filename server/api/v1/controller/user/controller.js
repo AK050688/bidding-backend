@@ -261,10 +261,11 @@ export class userController {
       }
       const token = await commonFunction.getToken({ _id: userResult._id });
       let seller_obejct
+      
       if (userResult.isSeller === true) {
+
+        
         const seller_data = await findSellerById(userResult._id)
-
-
         seller_obejct = {
           email: seller_data?.email,
           orgnizationName: seller_data?.orgnizationName,
@@ -274,10 +275,12 @@ export class userController {
           orgnizationWebsite: seller_data?.orgnizationWebsite,
           gstNumber: seller_data?.gstNumber,
           statusOfApproval: seller_data?.statusOfApproval,
-          sellerId:seller_data._id
+          sellerId:seller_data?._id
 
         }
+
       }
+      
       const sendResult = {
         _id: userResult._id,
         firstName: userResult.firstName,
@@ -296,6 +299,7 @@ export class userController {
         seller_obejct,
 
       };
+
       return res.json(
         new successResponse(sendResult, responseMessages.LOGIN_SUCCESS)
       );
