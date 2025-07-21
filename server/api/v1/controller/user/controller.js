@@ -273,7 +273,8 @@ export class userController {
           orgnizationEmail: seller_data?.orgnizationEmail,
           orgnizationWebsite: seller_data?.orgnizationWebsite,
           gstNumber: seller_data?.gstNumber,
-          statusOfApproval: seller_data?.statusOfApproval
+          statusOfApproval: seller_data?.statusOfApproval,
+          sellerId:seller_data._id
 
         }
       }
