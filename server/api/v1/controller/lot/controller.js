@@ -16,7 +16,7 @@ import lotItemServices from "../../services/lotItem.js";
 const { createlot, findlot, findAllLot, findLotByFilter, findLotById, updateLotById, findActiveLots, findExpiredLots, findlots, findById } = lot;
 const { sellerFindById } = sellerServices;
 const { findAdmin } = userServices;
-const { createRequest, findOnlySingleLot } = lotItemServices
+const { createRequest, findOnlySingleLot,findLotItem } = lotItemServices
 
 
 
@@ -184,7 +184,14 @@ async createLot(req, res, next) {
                 return next(apiError.notFound(responseMessages.LOT_NOT_FOUND));
             }
 
-            return res.json(new successResponse(lot, responseMessages.LOT_FETCHED));
+           const lotItems = await findLotItem({
+            _id: { $in: lot.lotItemId }
+        });
+
+        return res.json(new successResponse({
+            lot,
+            lotItems
+        }, responseMessages.LOT_FETCHED));
         } catch (error) {
             console.error("Error in getLotById:", error);
             next(error);
