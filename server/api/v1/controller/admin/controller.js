@@ -14,12 +14,31 @@ import lotServices from "../../services/lot.js";
 import bcrypt from "bcrypt";
 import Joi from "joi";
 import { lotStatus } from "../../../../enums/lotStatus.js";
-const { updateUserById, findAdmin, paginate, findUserById, findAdminv2, countUser, findAll, findAllBuyers } = userServices;
-const { findSellerById, updateSellerById, findAllRequest, findSellerByBuyerid, countSeller, findSellerDoc, findAllSeller } = sellerServices;
+const {
+  updateUserById,
+  findAdmin,
+  paginate,
+  findUserById,
+  findAdminv2,
+  countUser,
+  findAll,
+  findAllBuyers,
+} = userServices;
+const {
+  findSellerById,
+  updateSellerById,
+  findAllRequest,
+  findSellerByBuyerid,
+  countSeller,
+  findSellerDoc,
+  findAllSeller,
+} = sellerServices;
 // const { allProductDocuments, findIsSoldProduct, } = productService;
-const { getLiveBidCounts,BidCount } = bidService;
-const { findSoldLots, findAllLotDocuments,findById ,updateLotById,findlot} = lotServices;
-const { findTransaction, findAndUpdate, findTransactionByOrderId } = transactionServices;
+const { getLiveBidCounts, BidCount } = bidService;
+const { findSoldLots, findAllLotDocuments, findById, updateLotById, findlot } =
+  lotServices;
+const { findTransaction, findAndUpdate, findTransactionByOrderId } =
+  transactionServices;
 
 class adminController {
   async adminLogin(req, res, next) {
@@ -157,29 +176,30 @@ class adminController {
 
   async markUserStatus(req, res, next) {
     const fields = Joi.object({
-      userStatus: Joi.string().valid('ACTIVE', 'BLOCKED', 'DELETE'),
-      userId: Joi.string().required()
-    })
+      userStatus: Joi.string().valid("ACTIVE", "BLOCKED", "DELETE"),
+      userId: Joi.string().required(),
+    });
     try {
       const validate = await fields.validateAsync(req.body);
 
-      const { userStatus, userId } = validate
+      const { userStatus, userId } = validate;
       const isAdmin = await findAdmin(req.userid);
       if (!isAdmin) {
         throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
       }
-      const updateUser = await updateUserById({ _id: userId }, { status: userStatus })
+      const updateUser = await updateUserById(
+        { _id: userId },
+        { status: userStatus }
+      );
       if (!updateUser) {
-        throw apiError.badRequest(responseMessages.USER_STATUS_NOT_UPDATED)
-
+        throw apiError.badRequest(responseMessages.USER_STATUS_NOT_UPDATED);
       }
-      return res.json(new successResponse(responseMessages.USER_STATUS_UPDATED))
-
-
+      return res.json(
+        new successResponse(responseMessages.USER_STATUS_UPDATED)
+      );
     } catch (error) {
       console.log("error..", error);
-      return next()
-
+      return next();
     }
   }
 
@@ -190,8 +210,6 @@ class adminController {
   //   })
   //   try {
   //     const validate = await fields.validateAsync(req.body);
-
-
 
   //     const { userStatus, userId } = validate
   //     const isAdmin = await findAdmin(req.userid);
@@ -205,7 +223,6 @@ class adminController {
   //     }
   //     return res.json(new successResponse(responseMessages.USER_STATUS_UPDATED))
 
-
   //   } catch (error) {
   //     console.log("error..", error);
   //     return next(error)
@@ -215,88 +232,91 @@ class adminController {
 
   async requestApproval(req, res, next) {
     const fields = Joi.object({
-      buyerId: Joi.string().required()
-        .required(),
+      buyerId: Joi.string().required().required(),
       status: Joi.string()
         .valid(...Object.values(statusOfApproval))
         .required(),
-    })
+    });
 
     try {
       const validate = await fields.validateAsync(req.body);
 
-      const { buyerId, status } = validate
+      const { buyerId, status } = validate;
       const isAdmin = await findAdminv2(req.userId);
       if (!isAdmin) {
         throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
-
       }
-      const buyer = await findUserById(buyerId)
+      const buyer = await findUserById(buyerId);
       if (!buyer) {
-        return res.json(apiError.notFound(responseMessages.USER_NOT_FOUND))
+        return res.json(apiError.notFound(responseMessages.USER_NOT_FOUND));
       }
-      const isSeller = await findSellerByBuyerid(buyerId)
+      const isSeller = await findSellerByBuyerid(buyerId);
       if (!isSeller) {
-        return res.json(
-          apiError.badRequest(responseMessages.USER_NOT_FOUND)
-        );
+        return res.json(apiError.badRequest(responseMessages.USER_NOT_FOUND));
       }
       const sellerId = isSeller._id;
-
-      const updateStatus = await updateSellerById(sellerId, { $set: { statusOfApproval: status } })
-      await updateUserById(buyerId, { $set: { isSeller: true } })
-
-      return res.json(new successResponse(updateStatus, responseMessages.USER_STATUS_UPDATED))
+      let updateStatus;
+      if (status === statusOfApproval.ACCEPTED) {
+        updateStatus = await updateSellerById(sellerId, {
+          $set: { statusOfApproval: status },
+        });
+        await updateUserById(buyerId, { $set: { isSeller: true } });
+      }
+      return res.json(
+        new successResponse(updateStatus, responseMessages.USER_STATUS_UPDATED)
+      );
     } catch (error) {
       console.log("error..", error);
-      return next(error)
-
+      return next(error);
     }
   }
   async getAllRequest(req, res, next) {
-
     const fields = Joi.object({
       statusOfApproval: Joi.string()
         .valid(...Object.values(statusOfApproval))
         .required(),
-    })
+    });
 
     try {
       const validate = await fields.validateAsync(req.body);
-      const { statusOfApproval } = validate
+      const { statusOfApproval } = validate;
       const isAdmin = await findAdminv2(req.userId);
       if (!isAdmin) {
         return res.json(
           apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
         );
       }
-      const updateStatus = await findAllRequest({ statusOfApproval: statusOfApproval })
-      return res.json(new successResponse(updateStatus, responseMessages.SUCCESS))
+      const updateStatus = await findAllRequest({
+        statusOfApproval: statusOfApproval,
+      });
+      return res.json(
+        new successResponse(updateStatus, responseMessages.SUCCESS)
+      );
     } catch (error) {
       console.log("error..", error);
-      return next(error)
-
+      return next(error);
     }
   }
   async getSpecificRequest(req, res, next) {
     const fields = Joi.object({
       buyerId: Joi.string().required(),
-    })
+    });
     try {
       const validate = await fields.validateAsync(req.params);
-      const { buyerId } = validate
+      const { buyerId } = validate;
       const isAdmin = await findAdminv2(req.userId);
       if (!isAdmin) {
         return res.json(
           apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND)
         );
       }
-      const updateStatus = await findSellerById(buyerId)
-      return res.json(new successResponse(updateStatus, responseMessages.SUCCESS))
+      const updateStatus = await findSellerById(buyerId);
+      return res.json(
+        new successResponse(updateStatus, responseMessages.SUCCESS)
+      );
     } catch (error) {
       console.log("error..", error);
-      return next(error)
-
+      return next(error);
     }
   }
   async userCountData(req, res, next) {
@@ -309,17 +329,21 @@ class adminController {
       }
       const totalBuyer = await countUser({ userType: userType.BUYER });
       const totalSeller = await countSeller({ userType: userType.SELLER });
-      return res.json(new successResponse({ totalBuyer, totalSeller }, responseMessages.DATA_FOUND));
+      return res.json(
+        new successResponse(
+          { totalBuyer, totalSeller },
+          responseMessages.DATA_FOUND
+        )
+      );
     } catch (error) {
       console.log("error in userCountData:", error);
       return next(error);
-
     }
   }
 
   async adminDeleteUser(req, res, next) {
     const schema = Joi.object({
-      userId: Joi.string().required()
+      userId: Joi.string().required(),
     });
 
     try {
@@ -348,7 +372,9 @@ class adminController {
   async markSellerStatus(req, res, next) {
     const schema = Joi.object({
       sellerId: Joi.string().required(),
-      sellerStatus: Joi.string().valid("ACTIVE", "BLOCKED", "DELETED").required()
+      sellerStatus: Joi.string()
+        .valid("ACTIVE", "BLOCKED", "DELETED")
+        .required(),
     });
 
     try {
@@ -364,10 +390,9 @@ class adminController {
         throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
       }
 
-      const updatedSeller = await updateSellerById(
-        sellerId,
-        { $set: { status: sellerStatus } }
-      );
+      const updatedSeller = await updateSellerById(sellerId, {
+        $set: { status: sellerStatus },
+      });
 
       return res.json(
         new successResponse(updatedSeller, responseMessages.USER_STATUS_UPDATED)
@@ -388,7 +413,6 @@ class adminController {
       const totalBuyer = await findAll({ userType: userType.BUYER });
       const totalSellers = await findSellerDoc();
       const totalLiveBids = await getLiveBidCounts();
-
 
       return res.json(
         new successResponse(
@@ -429,7 +453,9 @@ class adminController {
         throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
       }
       const sellers = await findAllSeller();
-      return res.json(new successResponse(sellers, responseMessages.DATA_FOUND));
+      return res.json(
+        new successResponse(sellers, responseMessages.DATA_FOUND)
+      );
     } catch (error) {
       console.log("Error in getAllSeller:", error);
       return next(error);
@@ -443,9 +469,11 @@ class adminController {
 
       const transactions = await findTransaction();
 
-      return res.status(200).json(
-        new successResponse(transactions, responseMessages.TRANSACTION_FOUND)
-      );
+      return res
+        .status(200)
+        .json(
+          new successResponse(transactions, responseMessages.TRANSACTION_FOUND)
+        );
     } catch (error) {
       console.error("getAllTransactions Error:", error);
       return next(error);
@@ -465,101 +493,87 @@ class adminController {
 
       const transaction = await findTransactionByOrderId(orderId);
       if (!transaction) {
-        throw apiError.notFound(responseMessages.TRANSACTION_NOT_FOUND_FOR_ORDER_ID);
+        throw apiError.notFound(
+          responseMessages.TRANSACTION_NOT_FOUND_FOR_ORDER_ID
+        );
       }
 
-      return res.status(200).json(
-        new successResponse(transaction, responseMessages.TRANSACTION_FOUND)
-      );
+      return res
+        .status(200)
+        .json(
+          new successResponse(transaction, responseMessages.TRANSACTION_FOUND)
+        );
     } catch (error) {
       console.error("getTransactionByOrderId Error:", error);
       return next(error);
     }
   }
-  async lotAcceptByAdminRequest(req, res, next){
-  const schema = Joi.object({
-    lotId: Joi.string().hex().length(24).required(),
-    status:Joi.string().valid("ACCEPTED","REJECTED").required()
-  });
-
-  try {
-    const { error, value } = schema.validate(req.body); 
-    if (error) {
-      throw apiError.badRequest(error.details[0].message);
-    }
-
-    const { lotId } = value;
-    const isAdmin = await findAdmin(req.userid);
-    if (!isAdmin) {
-      throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
-    }
-    const lot = await findById(lotId);
-    if (!lot) {
-      throw apiError.notFound(responseMessages.LOT_NOT_FOUND);
-    }
-    if (lot.lotStatus === "ACCEPTED") {
-      throw apiError.badRequest(responseMessages.LOT_ACCEPT);
-    }
-    if (lot.lotStatus === "REJECTED") {
-      throw apiError.badRequest(responseMessages.LOT_REJECT);
-    }
-    await updateLotById(lotId, {
-      lotStatus: "ACCEPTED",
-      approvedBy: req.userid,
-      approvedAt: new Date(),
+  async lotAcceptByAdminRequest(req, res, next) {
+    const schema = Joi.object({
+      lotId: Joi.string().hex().length(24).required(),
+      status: Joi.string().valid("ACCEPTED", "REJECTED").required(),
     });
 
-    return res.json(
-      new successResponse(
-        { lotId },
-        responseMessages.LOT_ACCEPT_BY_ADMIN  
-      )
-    );
+    try {
+      const { error, value } = schema.validate(req.body);
+      if (error) {
+        throw apiError.badRequest(error.details[0].message);
+      }
 
-  } catch (error) {
-    console.error("Error in lotAcceptByAdminRequest:", error);
-    next(error);
-  }
-}
-async getAllLotOnBid(req, res, next){
-  try {
-    const isAdmin = await findAdmin(req.userid); 
-    if (!isAdmin) {
-      throw apiError.notFound(responseMessages.ADMIN_NOT_FOUND);
+      const { lotId } = value;
+      const isAdmin = await findAdmin(req.userid);
+      if (!isAdmin) {
+        throw apiError.unauthorized(responseMessages.ADMIN_NOT_FOUND);
+      }
+      const lot = await findById(lotId);
+      if (!lot) {
+        throw apiError.notFound(responseMessages.LOT_NOT_FOUND);
+      }
+      if (lot.lotStatus === "ACCEPTED") {
+        throw apiError.badRequest(responseMessages.LOT_ACCEPT);
+      }
+      if (lot.lotStatus === "REJECTED") {
+        throw apiError.badRequest(responseMessages.LOT_REJECT);
+      }
+      await updateLotById(lotId, {
+        lotStatus: "ACCEPTED",
+        approvedBy: req.userid,
+        approvedAt: new Date(),
+      });
+
+      return res.json(
+        new successResponse({ lotId }, responseMessages.LOT_ACCEPT_BY_ADMIN)
+      );
+    } catch (error) {
+      console.error("Error in lotAcceptByAdminRequest:", error);
+      next(error);
     }
-    const lots = await findlot();
-    const stats = await Promise.all(
-      lots.map(async (lot) => {
-        const bidCount = await BidCount({ lotId: lot._id });
-        return {
-          lotId: lot._id,
-          productName: lot.productName,
-          sellerId: lot.sellerId,
-          floorPrice: lot.floorPrice,
-          totalBids: bidCount
-        };
-      })
-    );
-
-    return res.status(200).json({ lots: stats });
-  } catch (error) {
-    console.error("Error in getAllLotBidStats:", error);
-    next(error);
-    
   }
-};
+  async getAllLotOnBid(req, res, next) {
+    try {
+      const isAdmin = await findAdmin(req.userid);
+      if (!isAdmin) {
+        throw apiError.notFound(responseMessages.ADMIN_NOT_FOUND);
+      }
+      const lots = await findlot();
+      const stats = await Promise.all(
+        lots.map(async (lot) => {
+          const bidCount = await BidCount({ lotId: lot._id });
+          return {
+            lotId: lot._id,
+            productName: lot.productName,
+            sellerId: lot.sellerId,
+            floorPrice: lot.floorPrice,
+            totalBids: bidCount,
+          };
+        })
+      );
 
-
-
-
-
-
-
-
-
-
-
-
-
+      return res.status(200).json({ lots: stats });
+    } catch (error) {
+      console.error("Error in getAllLotBidStats:", error);
+      next(error);
+    }
+  }
 }
 export default new adminController();
