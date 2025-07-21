@@ -29,7 +29,7 @@ const lotServices = {
     return await lotModel.findByIdAndUpdate(id, updateData, { new: true });
   },
   findLotById: async (id) => {
-    return await lotModel.findById(id);
+    return await lotModel.findById(id).populate("lotItemId");
   },
   findActiveLots: async () => {
     const now = new Date();
