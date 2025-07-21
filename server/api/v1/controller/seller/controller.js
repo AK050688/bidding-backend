@@ -190,17 +190,11 @@ export class sellerController {
    async getSellerCountBid(req, res, next) {
   try {
     const sellerId = req.params.id;
-
-    // 1. Find seller
     const seller = await sellerFindById(sellerId);
     if (!seller) {
-      return res.status(404).json({ message: "Seller not found" });
+      throw apiError.notFound(responseMessages.SELLER_NOT_FOUND)
     }
-
-    // 2. Find lots created by seller
     const lots = await findlot({ sellerId });
-
-    // 3. For each lot, count number of bids
     const lotDataWithBidCounts = await Promise.all(
       lots.map(async (lot) => {
         const bidCount = await BidCount({ lotId: lot._id });
@@ -212,8 +206,6 @@ export class sellerController {
         };
       })
     );
-
-    // 4. Return response
     res.status(200).json({
       seller: {
         id: seller._id,

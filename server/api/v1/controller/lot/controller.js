@@ -265,16 +265,6 @@ async createLot(req, res, next) {
         next(error);
     }
 }
-
-
-
-
-
-
-
-
-
-
     async getAllLots(req, res, next) {
         try {
             const { status, conditionType, categoryId } = req.query;

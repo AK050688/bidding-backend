@@ -17,8 +17,8 @@ import { lotStatus } from "../../../../enums/lotStatus.js";
 const { updateUserById, findAdmin, paginate, findUserById, findAdminv2, countUser, findAll, findAllBuyers } = userServices;
 const { findSellerById, updateSellerById, findAllRequest, findSellerByBuyerid, countSeller, findSellerDoc, findAllSeller } = sellerServices;
 // const { allProductDocuments, findIsSoldProduct, } = productService;
-const { getLiveBidCounts } = bidService;
-const { findSoldLots, findAllLotDocuments,findById ,updateLotById} = lotServices;
+const { getLiveBidCounts,BidCount } = bidService;
+const { findSoldLots, findAllLotDocuments,findById ,updateLotById,findlot} = lotServices;
 const { findTransaction, findAndUpdate, findTransactionByOrderId } = transactionServices;
 
 class adminController {
@@ -520,7 +520,35 @@ class adminController {
     console.error("Error in lotAcceptByAdminRequest:", error);
     next(error);
   }
+}
+async getAllLotOnBid(req, res, next){
+  try {
+    const isAdmin = await findAdmin(req.userid); 
+    if (!isAdmin) {
+      throw apiError.notFound(responseMessages.ADMIN_NOT_FOUND);
+    }
+    const lots = await findlot();
+    const stats = await Promise.all(
+      lots.map(async (lot) => {
+        const bidCount = await BidCount({ lotId: lot._id });
+        return {
+          lotId: lot._id,
+          productName: lot.productName,
+          sellerId: lot.sellerId,
+          floorPrice: lot.floorPrice,
+          totalBids: bidCount
+        };
+      })
+    );
+
+    return res.status(200).json({ lots: stats });
+  } catch (error) {
+    console.error("Error in getAllLotBidStats:", error);
+    next(error);
+    
+  }
 };
+
 
 
 
