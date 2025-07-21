@@ -309,7 +309,7 @@ const bitServices = {
       if (
         currentTime >= lot.startTime &&
         currentTime <= lot.endTime &&
-        !product.isSold
+        !lot.isSold
       ) {
         liveBidCount++;
       }
@@ -320,6 +320,10 @@ const bitServices = {
   updateLot: async (lotId, updateData) => {
     return await lotModel.findByIdAndUpdate(lotId, updateData, { new: true });
   },
+   BidCount: async (inserObj) => {
+    return await bidModel.countDocuments(inserObj);
+  },
+
 };
 
 export default bitServices;

@@ -22,6 +22,7 @@ export default Express.Router()
   auth.verifyToken,
   controller.downloadDocument
 )
+.get("/getSellerCountBid/:id", controller.getSellerCountBid);
 
 
 
