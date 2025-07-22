@@ -2,7 +2,7 @@ import lotModel from "../../../models/lot.js";
 
 const lotServices = {
   findlot: async (lot) => {
-    return await lotModel.find(lot)
+    return await lotModel.find(lot).populate({path:"lotItemId",path:"categoryId",select: "categoryName"})
 
   },
   createlot: async (insertObj) => {

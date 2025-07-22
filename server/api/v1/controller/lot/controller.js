@@ -10,13 +10,16 @@ import { status } from "../../../../enums/status.js";
 import bidModel from "../../../../models/bidschema.js"
 import lotItemService from "../../services/lotItem.js"
 import Joi from "joi";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import fs from "fs/promises";
 import lot from "../../services/lot.js";
 import sellerServices from "../../services/sellers.js";
 import lotItemServices from "../../services/lotItem.js";
 const { createlot, findlot, findAllLot, findLotByFilter, findLotById, updateLotById, findActiveLots, findExpiredLots, findlots, findById } = lot;
-const { sellerFindById } = sellerServices;
+const { sellerFindById ,sellerFind} = sellerServices;
 const { findAdmin } = userServices;
-const { createRequest, findOnlySingleLot,findLotItem } = lotItemServices
+const { createRequest, findOnlySingleLot, findLotItem } = lotItemServices
 
 
 
@@ -24,247 +27,242 @@ const { createRequest, findOnlySingleLot,findLotItem } = lotItemServices
 
 export class lotController {
 
-// async createLot(req, res, next) {
-//     const schema = Joi.object({
-//         sellerId: Joi.string().required(),
-//         productName: Joi.string().required(),
-//         totalBrand: Joi.string().required(),
-//         categoryId: Joi.string().required(),
-//         floorPrice: Joi.number().required(),
-//         lotQuantity: Joi.number().required(),
-//         totalPrice: Joi.number().required(),
-//         maxBidAmount: Joi.number().required(),
-//         startDate: Joi.date().required(),
-//         endDate: Joi.date().required(),
-//         conditionType: Joi.string()
-//             .valid(...Object.values(conditionType))
-//             .required(),
-//         location: Joi.string().required(),
-//         description: Joi.string().optional(),
-//         // Lot Item fields
-//         brandName: Joi.string().required(),
-//         quantity: Joi.number().required(),
-//         perUnitPrice: Joi.number().required(),
-//     });
+    // async createLot(req, res, next) {
+    //     const schema = Joi.object({
+    //         sellerId: Joi.string().required(),
+    //         productName: Joi.string().required(),
+    //         totalBrand: Joi.string().required(),
+    //         categoryId: Joi.string().required(),
+    //         floorPrice: Joi.number().required(),
+    //         lotQuantity: Joi.number().required(),
+    //         totalPrice: Joi.number().required(),
+    //         maxBidAmount: Joi.number().required(),
+    //         startDate: Joi.date().required(),
+    //         endDate: Joi.date().required(),
+    //         conditionType: Joi.string()
+    //             .valid(...Object.values(conditionType))
+    //             .required(),
+    //         location: Joi.string().required(),
+    //         description: Joi.string().optional(),
+    //         // Lot Item fields
+    //         brandName: Joi.string().required(),
+    //         quantity: Joi.number().required(),
+    //         perUnitPrice: Joi.number().required(),
+    //     });
 
-//     try {
-//         const { error, value } = schema.validate(req.body);
-//         if (error) {
-//             throw apiError.badRequest(error.details[0].message);
-//         }
+    //     try {
+    //         const { error, value } = schema.validate(req.body);
+    //         if (error) {
+    //             throw apiError.badRequest(error.details[0].message);
+    //         }
 
-//         const seller = await sellerFindById(value.sellerId);
-//         if (!seller) {
-//             throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
-//         }
+    //         const seller = await sellerFindById(value.sellerId);
+    //         if (!seller) {
+    //             throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
+    //         }
 
-//         let lotImage = [];
-//         if (req.files && req.files.lotImage && req.files.lotImage.length > 0) {
-//             lotImage = req.files.lotImage.map((file) => `/${file.filename}`);
-//         }
+    //         let lotImage = [];
+    //         if (req.files && req.files.lotImage && req.files.lotImage.length > 0) {
+    //             lotImage = req.files.lotImage.map((file) => `/${file.filename}`);
+    //         }
 
-//         const {
-//             productName,
-//             totalBrand,
-//             sellerId,
-//             categoryId,
-//             floorPrice,
-//             totalPrice,
-//             lotQuantity,
-//             maxBidAmount,
-//             startDate,
-//             endDate,
-//             conditionType,
-//             location,
-//             description,
-//             brandName,
-//             quantity,
-//             perUnitPrice,
-//         } = value;
+    //         const {
+    //             productName,
+    //             totalBrand,
+    //             sellerId,
+    //             categoryId,
+    //             floorPrice,
+    //             totalPrice,
+    //             lotQuantity,
+    //             maxBidAmount,
+    //             startDate,
+    //             endDate,
+    //             conditionType,
+    //             location,
+    //             description,
+    //             brandName,
+    //             quantity,
+    //             perUnitPrice,
+    //         } = value;
 
-//         // 1. First create the Lot document
-//         const newLot = await createlot({
-//             productName,
-//             totalBrand,
-//             lotImage,
-//             lotItemId: [], 
-//             sellerId,
-//             categoryId,
-//             floorPrice,
-//             totalPrice,
-//             maxBidAmount,
-//             lotQuantity,
-//             startDate,
-//             endDate,
-//             conditionType,
-//             location,
-//             description,
-//         });
+    //         // 1. First create the Lot document
+    //         const newLot = await createlot({
+    //             productName,
+    //             totalBrand,
+    //             lotImage,
+    //             lotItemId: [], 
+    //             sellerId,
+    //             categoryId,
+    //             floorPrice,
+    //             totalPrice,
+    //             maxBidAmount,
+    //             lotQuantity,
+    //             startDate,
+    //             endDate,
+    //             conditionType,
+    //             location,
+    //             description,
+    //         });
 
-//         const newLotItem = await createRequest({
-//             lotId: newLot._id, // Reference to the parent Lot
-//             brandName,
-//             quantity,
-//             perUnitPrice,
-//             sellerId,
-//             description: description || "No description provided",
-//             productImage: lotImage.length > 0 ? lotImage[0] : "/default.jpg",
-//         });
+    //         const newLotItem = await createRequest({
+    //             lotId: newLot._id, // Reference to the parent Lot
+    //             brandName,
+    //             quantity,
+    //             perUnitPrice,
+    //             sellerId,
+    //             description: description || "No description provided",
+    //             productImage: lotImage.length > 0 ? lotImage[0] : "/default.jpg",
+    //         });
 
-//         // 3. Update the Lot to include the Lot Item reference
-//         await updateLotById(newLot._id, {
-//             $push: { lotItemId: newLotItem._id }
-//         });
-//         const updatedLot = await findLotById(newLot._id);
+    //         // 3. Update the Lot to include the Lot Item reference
+    //         await updateLotById(newLot._id, {
+    //             $push: { lotItemId: newLotItem._id }
+    //         });
+    //         const updatedLot = await findLotById(newLot._id);
 
-//         return res.json(
-//             new successResponse(
-//                 { 
-//                     lot: updatedLot, 
-//                     lotItem: newLotItem 
-//                 },
-//                 responseMessages.LOT_CREATED
-//             )
-//         );
+    //         return res.json(
+    //             new successResponse(
+    //                 { 
+    //                     lot: updatedLot, 
+    //                     lotItem: newLotItem 
+    //                 },
+    //                 responseMessages.LOT_CREATED
+    //             )
+    //         );
 
-//     } catch (error) {
-//         console.error("Error in createLot:", error);
-//         next(error);
-//     }
-// }
+    //     } catch (error) {
+    //         console.error("Error in createLot:", error);
+    //         next(error);
+    //     }
+    // }
 
-
-
-
-
-
-async createLot(req, res, next) {
-    const schema = Joi.object({
-        sellerId: Joi.string().required(),
-        productName: Joi.string().required(),
-        totalBrand: Joi.string().required(),
-        categoryId: Joi.string().required(),
-        floorPrice: Joi.number().required(),
-        lotQuantity: Joi.number().required(),
-        totalPrice: Joi.number().required(),
-        maxBidAmount: Joi.number().required(),
-        startDate: Joi.date().required(),
-        endDate: Joi.date().required(),
-        conditionType: Joi.string()
-            .valid(...Object.values(conditionType))
-            .required(),
-        location: Joi.string().required(),
-        description: Joi.string().optional(),
-        lotItems: Joi.string().required() // treat it as a stringified JSON
-    });
-
-    try {
-        const { error, value } = schema.validate(req.body);
-        if (error) {
-            throw apiError.badRequest(error.details[0].message);
-        }
-
-        const seller = await sellerFindById(value.sellerId);
-        if (!seller) {
-            throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
-        }
-
-        let lotImage = [];
-        if (req.files?.lotImage?.length > 0) {
-            lotImage = req.files.lotImage.map((file) => `/${file.filename}`);
-        }
-
-        const {
-            productName,
-            totalBrand,
-            sellerId,
-            categoryId,
-            floorPrice,
-            totalPrice,
-            lotQuantity,
-            maxBidAmount,
-            startDate,
-            endDate,
-            conditionType,
-            location,
-            description,
-            lotItems,
-        } = value;
-
-        let parsedLotItems;
-        try {
-            parsedLotItems = JSON.parse(lotItems);
-            if (!Array.isArray(parsedLotItems)) {
-                throw new Error("lotItems must be a JSON array.");
-            }
-        } catch (e) {
-            throw apiError.badRequest("Invalid JSON format for lotItems.");
-        }
-
-        // 1. Create Lot
-        const newLot = await createlot({
-            productName,
-            totalBrand,
-            lotImage,
-            lotItemId: [],
-            sellerId,
-            categoryId,
-            floorPrice,
-            totalPrice,
-            maxBidAmount,
-            lotQuantity,
-            startDate,
-            endDate,
-            conditionType,
-            location,
-            description,
+    async createLot(req, res, next) {
+        const schema = Joi.object({
+            sellerId: Joi.string().required(),
+            productName: Joi.string().required(),
+            totalBrand: Joi.string().required(),
+            categoryId: Joi.string().required(),
+            floorPrice: Joi.number().required(),
+            lotQuantity: Joi.number().required(),
+            totalPrice: Joi.number().required(),
+            maxBidAmount: Joi.number().required(),
+            startDate: Joi.date().required(),
+            endDate: Joi.date().required(),
+            conditionType: Joi.string()
+                .valid(...Object.values(conditionType))
+                .required(),
+            location: Joi.string().required(),
+            description: Joi.string().optional(),
+            lotItems: Joi.string().required() // treat it as a stringified JSON
         });
 
-        // 2. Create lotItems using forEach and Promise.all
-        const lotItemIds = [];
-
-        const promises = [];
-        parsedLotItems.forEach((item) => {
-            if (!item.brandName || isNaN(item.quantity) || isNaN(item.perUnitPrice)) {
-                throw apiError.badRequest("Missing or invalid brandName, quantity or perUnitPrice in lotItems.");
+        try {
+            const { error, value } = schema.validate(req.body);
+            if (error) {
+                throw apiError.badRequest(error.details[0].message);
             }
 
-            const promise = createRequest({
-                lotId: newLot._id,
-                brandName: item.brandName,
-                quantity: item.quantity,
-                perUnitPrice: item.perUnitPrice,
+            const seller = await sellerFindById(value.sellerId);
+            if (!seller) {
+                throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
+            }
+
+            let lotImage = [];
+            if (req.files?.lotImage?.length > 0) {
+                lotImage = req.files.lotImage.map((file) => `/${file.filename}`);
+            }
+
+            const {
+                productName,
+                totalBrand,
                 sellerId,
-                description: description || "No description provided",
-                productImage: lotImage.length > 0 ? lotImage[0] : "/default.jpg",
-            }).then((lotItem) => {
-                lotItemIds.push(lotItem._id);
+                categoryId,
+                floorPrice,
+                totalPrice,
+                lotQuantity,
+                maxBidAmount,
+                startDate,
+                endDate,
+                conditionType,
+                location,
+                description,
+                lotItems,
+            } = value;
+
+            let parsedLotItems;
+            try {
+                parsedLotItems = JSON.parse(lotItems);
+                if (!Array.isArray(parsedLotItems)) {
+                    throw new Error("lotItems must be a JSON array.");
+                }
+            } catch (e) {
+                throw apiError.badRequest("Invalid JSON format for lotItems.");
+            }
+
+            // 1. Create Lot
+            const newLot = await createlot({
+                productName,
+                totalBrand,
+                lotImage,
+                lotItemId: [],
+                sellerId,
+                categoryId,
+                floorPrice,
+                totalPrice,
+                maxBidAmount,
+                lotQuantity,
+                startDate,
+                endDate,
+                conditionType,
+                location,
+                description,
             });
 
-            promises.push(promise);
-        });
+            // 2. Create lotItems using forEach and Promise.all
+            const lotItemIds = [];
 
-        await Promise.all(promises);
+            const promises = [];
+            parsedLotItems.forEach((item) => {
+                if (!item.brandName || isNaN(item.quantity) || isNaN(item.perUnitPrice)) {
+                    throw apiError.badRequest("Missing or invalid brandName, quantity or perUnitPrice in lotItems.");
+                }
 
-        // 3. Push lotItemIds to Lot
-        await updateLotById(newLot._id, {
-            $set: { lotItemId: lotItemIds }
-        });
+                const promise = createRequest({
+                    lotId: newLot._id,
+                    brandName: item.brandName,
+                    quantity: item.quantity,
+                    perUnitPrice: item.perUnitPrice,
+                    sellerId,
+                    description: description || " ",
+                    productImage: lotImage.length > 0 ? lotImage[0] : "/default.jpg",
+                }).then((lotItem) => {
+                    lotItemIds.push(lotItem._id);
+                });
 
-        const updatedLot = await findLotById(newLot._id);
+                promises.push(promise);
+            });
 
-        return res.json(
-            new successResponse(
-                { lot: updatedLot, lotItemIds },
-                responseMessages.LOT_CREATED
-            )
-        );
+            await Promise.all(promises);
 
-    } catch (error) {
-        console.error("Error in createLot:", error);
-        next(error);
+            // 3. Push lotItemIds to Lot
+            await updateLotById(newLot._id, {
+                $set: { lotItemId: lotItemIds }
+            });
+
+            const updatedLot = await findLotById(newLot._id);
+
+            return res.json(
+                new successResponse(
+                    { lot: updatedLot, lotItemIds },
+                    responseMessages.LOT_CREATED
+                )
+            );
+
+        } catch (error) {
+            console.error("Error in createLot:", error);
+            next(error);
+        }
     }
-}
     async getAllLots(req, res, next) {
         try {
             const { status, conditionType, categoryId } = req.query;
@@ -317,10 +315,10 @@ async createLot(req, res, next) {
             }
 
 
-        return res.json(new successResponse({
-            lot,
-           
-        }, responseMessages.LOT_FETCHED));
+            return res.json(new successResponse({
+                lot,
+
+            }, responseMessages.LOT_FETCHED));
         } catch (error) {
             console.error("Error in getLotById:", error);
             next(error);
@@ -349,18 +347,19 @@ async createLot(req, res, next) {
             }
 
             const lotId = req.params.id;
-            const adminDetails = await findAdmin(req.userId);
-            if (!adminDetails || adminDetails.userType !== userType.ADMIN) {
-                return next(apiError.forbidden(responseMessages.ADMIN_UPDATE_LOT));
-            }
+            const sellerId =  req.userId;
 
+            const findSeller = await sellerFind({buyerId:sellerId});
+            if (!findSeller) {
+                throw apiError.notFound(responseMessages.SELLER_LOT_FOUND);
+            }
 
             const existingLot = await findLotById(lotId);
             if (!existingLot) {
                 return next(apiError.notFound(responseMessages.LOT_NOT_FOUND));
             }
             let query = {};
-            console.log(value.productName);
+            console.log(query);
 
             if (value.productName) {
                 query.productName = value.productName;
@@ -401,6 +400,104 @@ async createLot(req, res, next) {
         }
     };
 
+    //     async  updateLot(req, res, next) {
+    //     const schema = Joi.object({
+    //         productName: Joi.string().optional(),
+    //         totalBrand: Joi.string().optional(),
+    //         lotItemId: Joi.array().items(Joi.string()).optional(),
+    //         categoryId: Joi.string().optional(),
+    //         floorPrice: Joi.number().optional(),
+    //         totalPrice: Joi.number().optional(),
+    //         startDate: Joi.date().optional(),
+    //         endDate: Joi.date().optional(),
+    //         conditionType: Joi.string().valid(...Object.values(conditionType)).optional(),
+    //         location: Joi.string().optional(),
+    //         description: Joi.string().optional(),
+    //         isSold: Joi.boolean().optional()
+    //     });
+
+    //     try {
+    //         const { error, value } = schema.validate(req.body);
+    //         if (error) {
+    //             return next(apiError.badRequest(error.details[0].message));
+    //         }
+
+    //         const lotId = req.params.id;
+    //         const adminDetails = await findAdmin(req.userId);
+    //         if (!adminDetails || adminDetails.userType !== userType.ADMIN) {
+    //             return next(apiError.forbidden(responseMessages.ADMIN_UPDATE_LOT));
+    //         }
+
+    //         const existingLot = await findLotById(lotId);
+    //         if (!existingLot) {
+    //             return next(apiError.notFound(responseMessages.LOT_NOT_FOUND));
+    //         }
+
+    //         let query = {};
+
+    //         //  DELETE OLD IMAGES IF NEW ONES ARE PROVIDED
+    //         const __filename = fileURLToPath(import.meta.url);
+    //         const __dirname = dirname(__filename);
+    //         let lotImages = existingLot.lotImage || [];
+
+    //         if (req.files && req.files.lotImage) {
+    //             const deletionErrors = [];
+
+    //             for (const imagePath of lotImages) {
+    //                 const fullPath = path.join(
+    //                     __dirname,
+    //                     "..",
+    //                     "..",
+    //                     "..",
+    //                     "..",
+    //                     "..",
+    //                     "public",
+    //                     imagePath
+    //                 );
+
+    //                 try {
+    //                     await fs.access(fullPath);
+    //                     await fs.unlink(fullPath);
+    //                     console.log(`Deleted old lot image: ${fullPath}`);
+    //                 } catch (err) {
+    //                     if (err.code === "ENOENT") {
+    //                         console.warn(`Lot image file not found: ${fullPath}`);
+    //                     } else {
+    //                         console.error(`Error deleting lot image: ${fullPath}`, err);
+    //                         deletionErrors.push(imagePath);
+    //                     }
+    //                 }
+    //             }
+
+    //             if (deletionErrors.length > 0) {
+    //                 console.warn("Some lot images couldn't be deleted:", deletionErrors);
+    //             }
+    //             lotImages = req.files.lotImage.map(file => `/${file.filename}`);
+    //         }
+
+    //         if (req.files && req.files.lotImage) {
+    //             value.lotImage = lotImages;
+    //             query.lotImage = lotImages;
+    //         }
+    //         if (value.productName) query.productName = value.productName;
+    //         if (value.totalBrand) query.totalBrand = value.totalBrand;
+    //         if (value.lotItemId) query.lotItemId = value.lotItemId;
+    //         if (value.categoryId) query.categoryId = value.categoryId;
+    //         if (value.floorPrice) query.floorPrice = value.floorPrice;
+    //         if (value.totalPrice) query.totalPrice = value.totalPrice;
+    //         if (value.conditionType) query.conditionType = value.conditionType;
+    //         if (value.location) query.location = value.location;
+    //         if (value.description) query.description = value.description;
+
+
+    //         const updated = await updateLotById(lotId, query);
+
+    //         return res.json(new successResponse(updated, responseMessages.LOT_UPDATE));
+    //     } catch (err) {
+    //         console.error("Error in updateLot:", err);
+    //         next(err);
+    //     }
+    // }
     async getActiveLots(req, res, next) {
         const schema = Joi.object({
             buyerId: Joi.string().optional(),

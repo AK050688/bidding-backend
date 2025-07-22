@@ -17,7 +17,7 @@ import { lotStatus } from "../../../../enums/lotStatus.js";
 const { updateUserById, findAdmin, paginate, findUserById, findAdminv2, countUser, findAll, findAllBuyers } = userServices;
 const { findSellerById, updateSellerById, findAllRequest, findSellerByBuyerid, countSeller, findSellerDoc, findAllSeller } = sellerServices;
 // const { allProductDocuments, findIsSoldProduct, } = productService;
-const { getLiveBidCounts,BidCount } = bidService;
+const { getLiveBidCounts,BidCount,checkbid } = bidService;
 const { findSoldLots, findAllLotDocuments,findById ,updateLotById,findlot} = lotServices;
 const { findTransaction, findAndUpdate, findTransactionByOrderId } = transactionServices;
 
@@ -521,33 +521,99 @@ class adminController {
     next(error);
   }
 }
-async getAllLotOnBid(req, res, next){
+
+
+
+// async getAllLotOnBid(req, res, next) {
+//   try {
+//     const isAdmin = await findAdmin(req.userid);
+//     if (!isAdmin) {
+//       throw apiError.notFound(responseMessages.ADMIN_NOT_FOUND);
+//     }
+
+//     const lots = await findlot(); 
+
+//     const stats = await Promise.all(
+//       lots.map(async (lot) => {
+//         const bidCount = await BidCount({ lotId: lot._id });
+//        const bids = await checkbid({ lotId: lot._id });
+
+//         const buyers = bids.map((bid) => ({
+//           buyerId: bid.buyerId?._id,
+//           name: bid.buyerId?.name,
+//           email: bid.buyerId?.email,
+//           mobile: bid.buyerId?.mobile,
+//           userType: bid.buyerId?.userType,
+//           bidAmount: bid.bidAmount,
+//           bidTime: bid.createdAt,
+//         }));
+
+//         return {
+//           lotId: lot._id,
+//           productName: lot.productName,
+//           sellerId: lot.sellerId,
+//           floorPrice: lot.floorPrice,
+//           totalBids: bidCount,
+//           buyers: buyers,
+//         };
+//       })
+//     );
+
+//      return res.json(new successResponse( responseMessages.DATA_FOUND,{lots: stats}));
+//   } catch (error) {
+//     console.error("Error in getAllLotOnBid:", error);
+//     next(error);
+//   }
+// }
+
+async getAllLotOnBid(req, res, next) {
   try {
-    const isAdmin = await findAdmin(req.userid); 
+    const isAdmin = await findAdmin(req.userid);
     if (!isAdmin) {
       throw apiError.notFound(responseMessages.ADMIN_NOT_FOUND);
     }
     const lots = await findlot();
-    const stats = await Promise.all(
-      lots.map(async (lot) => {
-        const bidCount = await BidCount({ lotId: lot._id });
-        return {
-          lotId: lot._id,
-          productName: lot.productName,
-          sellerId: lot.sellerId,
-          floorPrice: lot.floorPrice,
-          totalBids: bidCount
-        };
-      })
-    );
 
-    return res.status(200).json({ lots: stats });
+    const lotsWithBids = []; 
+
+    for (const lot of lots) {
+      const bidCount = await BidCount({ lotId: lot._id });
+     const bids = await checkbid({ lotId: lot._id });
+
+      const buyers = [];
+
+      for (const bid of bids) {
+        const buyerDetail = {
+          buyerId: bid.buyerId?._id,
+          name: bid.buyerId?.name,
+          email: bid.buyerId?.email,
+          mobile: bid.buyerId?.mobile,
+          userType: bid.buyerId?.userType,
+          bidAmount: bid.bidAmount,
+          bidTime: bid.createdAt,
+        };
+        buyers[buyers.length] = buyerDetail; 
+      }
+
+      const lotDetail = {
+        lotId: lot._id,
+        productName: lot.productName,
+        sellerId: lot.sellerId,
+        floorPrice: lot.floorPrice,
+        totalBids: bidCount,
+        buyers: buyers,
+      };
+
+      lotsWithBids[lotsWithBids.length] = lotDetail; 
+    }
+    return res.json(
+      new successResponse(responseMessages.DATA_FOUND, { lots: lotsWithBids })
+    );
   } catch (error) {
-    console.error("Error in getAllLotBidStats:", error);
-    next(error);
-    
+    console.error("Error in getAllLotOnBid:", error);
+    return next(error);
   }
-};
+}
 
 
 

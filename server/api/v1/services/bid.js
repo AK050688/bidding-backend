@@ -28,6 +28,14 @@ const bitServices = {
   findBid: async (inserObj) => {
     return await bidModel.find(inserObj).populate({ path: "lotId" });
   },
+checkbid: (inserObj) => {
+  return bidModel.find(inserObj).populate({
+    path: "buyerId",
+    select: "name email mobile userType"
+  });
+},
+   
+
   findPtoductaggration: async (buyerId) => {
     // return await bidModel.find({buyerId:buyerId}).populate({path:"productId",select:"",populate:({path:"categoryId", select:"categoryName"})})
     return await bidModel.aggregate([
