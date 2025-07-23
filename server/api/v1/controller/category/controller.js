@@ -15,6 +15,7 @@ const {
   categoryId,
   deleteCategory,
   findAllCategory,
+  findAllCategoryV1,
   findAdmin,
   findProductAssosiatedWithCategory
 } = categoryServices;
@@ -155,11 +156,11 @@ export class categoryController {
   }
   async getAllCategory(req, res, next) {
     try {
-      // const adminDetails = await findSeller({ _id: req.userId });
-      // if (!adminDetails) {
-      //   throw apiError.notFound(responseMessages.SELLER_NOT_FOUND);
-      // }
-      const categoryResult = await findAllCategory();
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
+
+      const categoryResult = await findAllCategoryV1(skip, limit);
       if (!categoryResult || categoryResult.length == 0) {
         throw apiError.notFound(responseMessages.CATEGORY_NOT_FOUND)
 

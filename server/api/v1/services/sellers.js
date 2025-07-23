@@ -21,8 +21,8 @@ const sellerServices = {
         return await userModel.findOne({ $and: [{ _id: id }, { status: { $ne: status.BLOCK } }] });
     },
     findByIds: async (id) => {
-        return await sellerModel.findOne({ $and: [{_id: id }, { statusOfApproval: { $ne: statusOfApproval.REJECTED } }] }).populate({ path: "buyerId", select: "firstName lastName email mobileNumber addressLine city zip status userType" });
-    },                                                                                             
+        return await sellerModel.findOne({ $and: [{ _id: id }, { statusOfApproval: { $ne: statusOfApproval.REJECTED } }] }).populate({ path: "buyerId", select: "firstName lastName email mobileNumber addressLine city zip status userType" });
+    },
     findSellerById: async (id) => {
         return await sellerModel.findOne({ $and: [{ buyerId: id }, { statusOfApproval: { $ne: statusOfApproval.REJECTED } }] }).populate({ path: "buyerId", select: "firstName lastName email mobileNumber addressLine city zip status userType" });
     },
@@ -75,8 +75,11 @@ const sellerServices = {
     sellerFindById: async (id) => {
         return await sellerModel.findById(id);
     },
-    sellerFind:async(id)=>{
+    sellerFind: async (id) => {
         return await sellerModel.findOne(id);
-    }
+    },
+    findPendingSellers :async() => {
+        return await sellerModel.countDocuments({statusOfApproval: statusOfApproval.PENDING});
+    },
 }
 export default sellerServices;

@@ -66,6 +66,9 @@ const sendData = {totalOrders,totalProducts,totalUsers}
 return sendData
 
   },
+  findBlockedBuyers :async () => {
+  return await userModel.countDocuments({userType: userType.BUYER, status: status.BLOCK});
+}
 
 
 }
