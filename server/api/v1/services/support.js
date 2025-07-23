@@ -1,4 +1,5 @@
 import supportModel from "../../../models/support.js"
+import sellerModel from "../../../models/seller.js"
 import { status } from "../../../enums/status.js";
 import { userType } from "../../../enums/userType.js";
 import userModel from "../../../models/user.js"

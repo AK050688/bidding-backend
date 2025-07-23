@@ -75,7 +75,7 @@ export class sellerController {
                     throw apiError.conflict(responseMessages.MOBILE_ALREADY_EXIST);
                 } else if (checkAlreadyRequested.status === "REJECTED") {
                     const result = await createRequest(validatedBody);
-                    // 👉 Update user as seller after REAPPLY
+                    
                     await updateUserById(req.userId, { isSeller: true });
                     return res.json(new successResponse(result, responseMessages.REAPPLIED_REQUEST));
 
