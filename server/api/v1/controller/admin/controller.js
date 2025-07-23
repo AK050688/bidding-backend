@@ -14,8 +14,8 @@ import lotServices from "../../services/lot.js";
 import bcrypt from "bcrypt";
 import Joi from "joi";
 import { lotStatus } from "../../../../enums/lotStatus.js";
-const { updateUserById, findAdmin, paginate, findUserById, findAdminv2, countUser, findAll, findAllBuyers } = userServices;
-const { findSellerById, updateSellerById, findAllRequest, findSellerByBuyerid, countSeller, findSellerDoc, findAllSeller } = sellerServices;
+const { updateUserById, findAdmin, paginate, findUserById, findAdminv2, countUser, findAll, findAllBuyers,findBlockedBuyers} = userServices;
+const { findSellerById, updateSellerById, findAllRequest, findSellerByBuyerid, countSeller, findSellerDoc, findAllSeller,findPendingSellers } = sellerServices;
 // const { allProductDocuments, findIsSoldProduct, } = productService;
 const { getLiveBidCounts,BidCount,checkbid } = bidService;
 const { findSoldLots, findAllLotDocuments,findById ,updateLotById,findlot} = lotServices;
@@ -388,6 +388,8 @@ class adminController {
       const totalBuyer = await findAll({ userType: userType.BUYER });
       const totalSellers = await findSellerDoc();
       const totalLiveBids = await getLiveBidCounts();
+      const blockedBuyers = await findBlockedBuyers();
+      const pendingSellers = await findPendingSellers();
 
 
       return res.json(
@@ -398,6 +400,8 @@ class adminController {
             totalBuyers: totalBuyer,
             totalSellers: totalSellers,
             totalLiveBids: totalLiveBids,
+            blockedBuyers:blockedBuyers,
+            pendingSellers:pendingSellers
           },
           responseMessages.DATA_FOUND
         )
@@ -497,12 +501,12 @@ class adminController {
     if (!lot) {
       throw apiError.notFound(responseMessages.LOT_NOT_FOUND);
     }
-    if (lot.lotStatus === "ACCEPTED") {
-      throw apiError.badRequest(responseMessages.LOT_ACCEPT);
-    }
-    if (lot.lotStatus === "REJECTED") {
-      throw apiError.badRequest(responseMessages.LOT_REJECT);
-    }
+    // if (lot.lotStatus === "ACCEPTED") {
+    //   throw apiError.badRequest(responseMessages.LOT_ACCEPT);
+    // }
+    // if (lot.lotStatus === "REJECTED") {
+    //   throw apiError.badRequest(responseMessages.LOT_REJECT);
+    // }
     await updateLotById(lotId, {
       lotStatus: "ACCEPTED",
       approvedBy: req.userid,

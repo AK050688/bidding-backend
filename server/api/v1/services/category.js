@@ -11,14 +11,14 @@ export default {
 
     findAdmin: async (id) => {
         return await userModel.findOne({ $and: [{ _id: id }, { userType: userType.ADMIN }] });
-       
+
     },
-  findUserById: async (id) => {
-    return await userModel.findOne({ $and: [{ _id: id }, { status: { $ne: status.BLOCK } }] });
-  },
+    findUserById: async (id) => {
+        return await userModel.findOne({ $and: [{ _id: id }, { status: { $ne: status.BLOCK } }] });
+    },
     findSeller: async (id) => {
-       // const seller = await sellerModel.findOne({ _id: id, $or: [{ userType: userType.ADMIN }, { $and: [{ _id: id }, { statusOfApproval: statusOfApproval.ACCEPTED }] }] });
-   return  await sellerModel.findOne({ $and: [{ _id: id }, { statusOfApproval: statusOfApproval.ACCEPTED }] });
+        // const seller = await sellerModel.findOne({ _id: id, $or: [{ userType: userType.ADMIN }, { $and: [{ _id: id }, { statusOfApproval: statusOfApproval.ACCEPTED }] }] });
+        return await sellerModel.findOne({ $and: [{ _id: id }, { statusOfApproval: statusOfApproval.ACCEPTED }] });
 
         // const seller = await sellerModel.findOne({ $and: [{ _id: id }, { statusOfApproval: statusOfApproval.ACCEPTED }] });
     },
@@ -42,10 +42,9 @@ export default {
         const categoryResult = await categoryModel.find(query);
         return categoryResult;
     },
-    // findProductAssosiatedWithCategory: async (query) => {
-    //     const categoryResult = await productModel.find(query);
-    //     return categoryResult;
-    // }
+    findAllCategoryV1: async (skip = 0, limit = 10) => {
+        return await categoryModel.find().skip(skip).limit(limit).sort({ createdAt: -1 });
+    }
 
 
 
