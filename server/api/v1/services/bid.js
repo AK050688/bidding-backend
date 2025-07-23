@@ -28,6 +28,14 @@ const bitServices = {
   findBid: async (inserObj) => {
     return await bidModel.find(inserObj).populate({ path: "lotId" });
   },
+checkbid: (inserObj) => {
+  return bidModel.find(inserObj).populate({
+    path: "buyerId",
+    select: "name email mobile userType"
+  });
+},
+   
+
   findPtoductaggration: async (buyerId) => {
     // return await bidModel.find({buyerId:buyerId}).populate({path:"productId",select:"",populate:({path:"categoryId", select:"categoryName"})})
     return await bidModel.aggregate([
@@ -309,7 +317,7 @@ const bitServices = {
       if (
         currentTime >= lot.startTime &&
         currentTime <= lot.endTime &&
-        !product.isSold
+        !lot.isSold
       ) {
         liveBidCount++;
       }
@@ -320,6 +328,10 @@ const bitServices = {
   updateLot: async (lotId, updateData) => {
     return await lotModel.findByIdAndUpdate(lotId, updateData, { new: true });
   },
+   BidCount: async (inserObj) => {
+    return await bidModel.countDocuments(inserObj);
+  },
+
 };
 
 export default bitServices;

@@ -20,6 +20,10 @@ export default Express.Router()
     .get("/getAllLots", controller.getAllLots)
     .get("/getLotById/lotId/:id", auth.verifyToken, controller.getLotById)
     .put("/updateLot/:id", auth.verifyToken, controller.updateLot)
+//     .put("/updateLot/:id",multerMiddleware("public", [".jpg", ".jpeg", ".png",".gif",".svg",".webp"]).fields([{ name: "lotImage", maxCount: 5 }]),
+//   auth.verifyToken,
+//   controller.updateLot
+// )
     .get("/getActiveLots", auth.verifyToken, controller.getActiveLots)
     .get("/getExpiredLots", auth.verifyToken, controller.getExpiredLots)
     .get("/getSoldLots", auth.verifyToken, controller.getSoldLots);

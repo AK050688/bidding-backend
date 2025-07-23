@@ -9,11 +9,10 @@ const lotItemServices = {
   createRequest: async (data) => {
     return await lotItemModel.create(data);
   },
- findLotById: async (id) => {
+ findLotByIds: async (id) => {
   return await lotItemModel.findById(id); 
 },
-findByIdAndUpdate: async (insertObj) => {
-  const { id, ...updateData } = insertObj;
+findByIdAndUpdate: async (id, updateData) => {
   return await lotItemModel.findByIdAndUpdate(id, updateData, { new: true });
 },
 findAndDelete: async (id) => {

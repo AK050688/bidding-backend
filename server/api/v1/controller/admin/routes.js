@@ -1,4 +1,4 @@
-import Express from "express";
+import Express, { Router } from "express";
 import controller from "./controller.js";
 import auth from "../../../../helper/auth.js"
 
@@ -18,7 +18,8 @@ export default Express.Router()
     .get("/getAllSeller",auth.verifyToken,controller.getAllSeller)
     .get("/getAllTransactions", auth.verifyToken, controller.getAllTransactions)
     .get("/getTransactionByOrderId/:orderId", auth.verifyToken, controller.getTransactionByOrderId)
-    .post("/lotAcceptByAdminRequest",auth.verifyToken, controller.lotAcceptByAdminRequest);
+    .post("/lotAcceptByAdminRequest",auth.verifyToken, controller.lotAcceptByAdminRequest)
+    .get("/getAllLotOnBid",auth.verifyToken,controller.getAllLotOnBid)
 
    
 

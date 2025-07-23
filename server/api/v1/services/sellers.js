@@ -75,5 +75,8 @@ const sellerServices = {
     sellerFindById: async (id) => {
         return await sellerModel.findById(id);
     },
+    sellerFind:async(id)=>{
+        return await sellerModel.findOne(id);
+    }
 }
 export default sellerServices;

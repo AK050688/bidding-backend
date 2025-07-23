@@ -9,6 +9,7 @@ const sellers = new Schema({
         type: mongoose.Types.ObjectId,
         ref: "buyers",
         required: true,
+        
     },
     name: {
         type: String,
