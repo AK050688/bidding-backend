@@ -68,6 +68,11 @@ return sendData
   },
   findBlockedBuyers :async () => {
   return await userModel.countDocuments({userType: userType.BUYER, status: status.BLOCK});
+},
+ findBuyers :async (query, skip = 0, limit = 10) => {
+  return await userModel.find(query).skip(skip).limit(limit).sort({ createdAt: -1 });
+ 
+
 }
 
 

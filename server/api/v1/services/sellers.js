@@ -78,8 +78,12 @@ const sellerServices = {
     sellerFind: async (id) => {
         return await sellerModel.findOne(id);
     },
-    findPendingSellers :async() => {
-        return await sellerModel.countDocuments({statusOfApproval: statusOfApproval.PENDING});
+    findPendingSellers: async () => {
+        return await sellerModel.countDocuments({ statusOfApproval: statusOfApproval.PENDING });
+    },
+    findSeller: async (skip = 0, limit = 10) => {
+        return await sellerModel.find().skip(skip).limit(limit).sort({ createdAt: -1 });
+
     },
 }
 export default sellerServices;
