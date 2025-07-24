@@ -11,12 +11,14 @@ const lotServices = {
   findAllLot: async () => {
     return await lotModel.findOne({ transactionId: orderId });
   },
-  findLotByFilter: async (filter) => {
+  findLotByFilter: async (filter, skip = 0, limit = 10) => {
     return await lotModel.find(filter).populate("categoryId", "categoryName")
       .populate("sellerId", "name email")
       .populate("lotItemId")
-      .sort({ createdAt: -1 });
+      .skip(skip).limit(limit)
+      .sort({ createdAt: -1 })
   },
+
   findLotById: async (id) => {
     return await lotModel.findById(id)
       .populate("categoryId")
@@ -31,28 +33,54 @@ const lotServices = {
   findLotById: async (id) => {
     return await lotModel.findById(id).populate("lotItemId");
   },
-  findActiveLots: async () => {
-    const now = new Date();
-    return await lotModel.find({
-      isSold: false,
-      startDate: { $lte: now },
-      endDate: { $gte: now }
-    });
-  },
-  findExpiredLots: async () => {
-    const now = new Date();
+ 
+  findActiveLots :async (skip = 0, limit = 10) => {
+  const now = new Date();
 
-    return await lotModel.find({
-      endDate: { $lt: now },
-      isSold: false,
-    })
-      .populate("sellerId", "name email")
+  const query = {
+    startDate: { $lte: now },
+    endDate: { $gte: now },
+    isSold: false,
+  };
+
+  const lots = await lotModel.find(query).skip(skip).limit(limit).sort({ createdAt: -1 });
+
+  return { lots };
+},
+
+  // findExpiredLots: async () => {
+  //   const now = new Date();
+
+  //   return await lotModel.find({
+  //     endDate: { $lt: now },
+  //     isSold: false,
+  //   })
+  //     .populate("sellerId", "name email")
+  //     .populate("categoryId", "categoryName")
+  //     .populate("lotItemId");
+  // },
+  findExpiredLots :async (skip = 0, limit = 10) => {
+  const now = new Date();
+
+  const query = {
+    endDate: { $lt: now },
+    isSold: false,
+  };
+
+  return await lotModel.find(query).skip(skip).limit(limit).sort({ endDate: -1 }).populate("sellerId", "name email")
       .populate("categoryId", "categoryName")
       .populate("lotItemId");
-  },
-  findlots: async (filter) => {
-    return await lotModel.find(filter).populate("sellerId").populate("categoryId");
-  },
+
+},
+
+  // findlots: async (filter) => {
+  //   return await lotModel.find(filter).populate("sellerId").populate("categoryId");
+  // },
+
+findlots :async (query, skip = 0, limit = 10) => {
+  return await lotModel.find(query).skip(skip).limit(limit).sort({ createdAt: -1 }).populate("sellerId").populate("categoryId");
+},
+
   findSoldLots: async () => {
     return await lotModel.find({ isSold: true }).countDocuments();
      

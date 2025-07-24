@@ -17,7 +17,7 @@ import lot from "../../services/lot.js";
 import sellerServices from "../../services/sellers.js";
 import lotItemServices from "../../services/lotItem.js";
 const { createlot, findlot, findAllLot, findLotByFilter, findLotById, updateLotById, findActiveLots, findExpiredLots, findlots, findById } = lot;
-const { sellerFindById ,sellerFind} = sellerServices;
+const { sellerFindById, sellerFind } = sellerServices;
 const { findAdmin } = userServices;
 const { createRequest, findOnlySingleLot, findLotItem } = lotItemServices
 
@@ -265,10 +265,8 @@ export class lotController {
     }
     async getAllLots(req, res, next) {
         try {
-            const { status, conditionType, categoryId } = req.query;
+            const { status, conditionType, categoryId, page = 1, limit = 10 } = req.query;
             const query = {};
-
-            //  Status filtering
             const now = new Date();
             if (status === "ACTIVE") {
                 query.startDate = { $lte: now };
@@ -280,19 +278,16 @@ export class lotController {
             } else if (status === "isSold") {
                 query.isSold = true;
             }
-
-            //  Filter by conditionType
             if (conditionType) {
                 query.conditionType = conditionType;
             }
-
-            //  Filter by categoryId
             if (categoryId) {
                 query.categoryId = categoryId;
             }
+            const skip = (parseInt(page) - 1) * parseInt(limit);
 
 
-            const lots = await findLotByFilter(query);
+            const lots = await findLotByFilter(query, skip, parseInt(limit));
 
             return res.json(new successResponse(lots, responseMessages.LOT_FETCHED));
         } catch (error) {
@@ -347,9 +342,9 @@ export class lotController {
             }
 
             const lotId = req.params.id;
-            const sellerId =  req.userId;
+            const sellerId = req.userId;
 
-            const findSeller = await sellerFind({buyerId:sellerId});
+            const findSeller = await sellerFind({ buyerId: sellerId });
             if (!findSeller) {
                 throw apiError.notFound(responseMessages.SELLER_LOT_FOUND);
             }
@@ -501,18 +496,21 @@ export class lotController {
     async getActiveLots(req, res, next) {
         const schema = Joi.object({
             buyerId: Joi.string().optional(),
+            page: Joi.number().optional().default(1),
+            limit: Joi.number().optional().default(10),
         })
         try {
             const { error, value } = schema.validate(req.query);
             if (error) {
                 throw apiError.badRequest(error.details[0].message);
             }
-            const { buyerId } = value;
+            const { buyerId, page, limit } = value;
             if (buyerId && !mongoose.Types.ObjectId.isValid(buyerId)) {
                 throw apiError.badRequest(responseMessages.INVALID);
             }
 
-            const lots = await findActiveLots();
+            const skip = (page - 1) * limit;
+            const lots = await findActiveLots(skip, limit);
             return res.json(new successResponse(lots, responseMessages.ACTIVE_LOTS_FETCHED));
         } catch (error) {
             console.error("Error in getActiveLots:", error);
@@ -522,17 +520,20 @@ export class lotController {
     async getExpiredLots(req, res, next) {
         const schema = Joi.object({
             buyerId: Joi.string().optional(),
+            page: Joi.number().optional().default(1),
+            limit: Joi.number().optional().default(10),
         });
         try {
             const { error, value } = schema.validate(req.query);
             if (error) {
                 return next(apiError.badRequest(error.details[0].message));
             }
-            const { buyerId } = value;
+            const { buyerId , page, limit  } = value;
             if (buyerId && !mongoose.Types.ObjectId.isValid(buyerId)) {
                 return next(apiError.badRequest(responseMessages.INVALID));
             }
-            const lots = await findExpiredLots();
+             const skip = (page - 1) * limit;
+            const lots = await findExpiredLots(skip, limit);
 
             return res.json(
                 new successResponse(lots, responseMessages.EXPIRED_LOTS_FETCHED)
@@ -545,19 +546,22 @@ export class lotController {
     async getSoldLots(req, res, next) {
         const schema = Joi.object({
             buyerId: Joi.string().optional(),
+            page: Joi.number().optional().default(1),
+            limit: Joi.number().optional().default(10),
         });
         try {
             const { error, value } = schema.validate(req.body);
             if (error) {
                 throw apiError.badRequest(error.details[0].message);
             }
-            const { buyerId } = value;
+            const { buyerId , page, limit } = value;
             if (buyerId && !mongoose.Types.ObjectId.isValid(buyerId)) {
                 throw apiError.badRequest(responseMessages.INVALID);
             }
-            const userId = req.userId
+            const userId = req.userId;
+              const skip = (page - 1) * limit;
 
-            const lots = await findlots({ sellerId: userId, isSold: true });
+            const lots = await findlots({ sellerId: userId, isSold: true }, skip,limit);
 
             if (!lots || lots.length === 0) {
                 return next(apiError.notFound(responseMessages.LOT_NOT_FOUND));

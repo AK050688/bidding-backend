@@ -31,7 +31,8 @@ const bitServices = {
 checkbid: (inserObj) => {
   return bidModel.find(inserObj).populate({
     path: "buyerId",
-    select: "name email mobile userType"
+    userType:userType.BUYER,
+    select: "firstName lastName "
   });
 },
    
